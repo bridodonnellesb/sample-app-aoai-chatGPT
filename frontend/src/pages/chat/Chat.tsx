@@ -800,7 +800,7 @@ const Chat = () => {
                                     rehypePlugins={[rehypeRaw]}
                                 />
                             </div>
-                            <iframe src="https://datascienceteampocra7fd.blob.core.windows.net/cs-knowledgemanagement-sops/2023%20Smart%20Metering%20FAQ's.pdf#page=[2]"></iframe>
+                            <iframe src="https://datascienceteampocra7fd.blob.core.windows.net/cs-knowledgemanagement-sops/2023%20Smart%20Metering%20FAQ's.pdf#page=[2]" width="100%" height="100%" min-height="50vh"></iframe>
                         </Stack.Item>
                     )}
                     {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
