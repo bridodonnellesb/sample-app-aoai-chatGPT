@@ -609,7 +609,7 @@ const Chat = () => {
 
     const onViewSource = (citation: Citation) => {
         if (citation.url) {
-            window.open(citation.url+"#page=["+citation.page+"]", "_blank");
+            window.open(citation.url+"#page="+citation.page, "_blank");
         }
     };
 
@@ -791,9 +791,16 @@ const Chat = () => {
                                 <IconButton iconProps={{ iconName: 'Cancel' }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
                             </Stack>
                             <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
-                            <p>URL</p>
-                            <p>{activeCitation.url+"#page=["+activeCitation.page+"]"}</p>
-                            <iframe src={activeCitation.url+"#page=["+activeCitation.page+"]"} width="100%" height="100%"></iframe>
+                            <iframe src={activeCitation.url+"#page="+activeCitation.page} width="100%" height="100%"></iframe>
+                            <div tabIndex={0}>
+                                <ReactMarkdown
+                                    linkTarget="_blank"
+                                    className={styles.citationPanelContent}
+                                    children={DOMPurify.sanitize(activeCitation.content, {ALLOWED_TAGS: XSSAllowTags})}
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeRaw]}
+                                />
+                            </div>
                         </Stack.Item>
                     )}
                     {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel />}
