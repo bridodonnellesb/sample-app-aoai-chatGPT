@@ -1,6 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import styles from "./Layout.module.css";
-import Contoso from "../../assets/Contoso.svg";
+import EI from "../../assets/EI.svg";
 import { CopyRegular } from "@fluentui/react-icons";
 import { Dialog, Stack, TextField } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
@@ -48,11 +48,9 @@ const Layout = () => {
     useEffect(() => {
         const handleResize = () => {
           if (window.innerWidth < 480) {
-            setShareLabel(undefined)
             setHideHistoryLabel("Hide history")
             setShowHistoryLabel("Show history")
           } else {
-            setShareLabel("Share")
             setHideHistoryLabel("Hide chat history")
             setShowHistoryLabel("Show chat history")
           }
@@ -70,7 +68,7 @@ const Layout = () => {
                 <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
                     <Stack horizontal verticalAlign="center">
                         <img
-                            src={ui?.logo ? ui.logo : Contoso}
+                            src={ui?.logo ? ui.logo : EI}
                             className={styles.headerIcon}
                             aria-hidden="true"
                         />
@@ -124,7 +122,7 @@ const Layout = () => {
                         <span className={styles.copyButtonText}>{copyText}</span>
                     </div>
                 </Stack>
-            </Dialog>
+            </Dialog>              
         </div>
     );
 };
