@@ -128,12 +128,15 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
         body: body,
         signal: abortSignal
     }).then((res) => {
+        console.log(res)
         return res
     })
     .catch((err) => {
+        console.log(err)
         console.error("There was an issue fetching your data.");
         return new Response;
     })
+    console.log(response)
     return response
 }
 
