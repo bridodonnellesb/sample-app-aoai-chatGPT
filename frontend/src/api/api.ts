@@ -119,7 +119,6 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
             messages: options.messages
         })
     }
-    console.log(body)
     const response = await fetch("/history/generate", {
         method: "POST",
         headers: {
@@ -128,7 +127,6 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
         body: body,
         signal: abortSignal
     }).then((res) => {
-        console.log(res)
         return res
     })
     .catch((err) => {
@@ -136,7 +134,6 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
         console.error("There was an issue fetching your data.");
         return new Response;
     })
-    console.log(response)
     return response
 }
 
