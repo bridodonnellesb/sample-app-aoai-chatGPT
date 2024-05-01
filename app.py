@@ -922,7 +922,7 @@ async def add_conversation():
         # check for the conversation_id, if the conversation is not set, we will create a new one
         history_metadata = {}
         if not conversation_id:
-            title = await generate_title(request_json["messages"])
+            title = "test"#await generate_title(request_json["messages"])
             conversation_dict = await cosmos_conversation_client.create_conversation(
                 user_id=user_id, title=title
             )
@@ -930,6 +930,7 @@ async def add_conversation():
             history_metadata["title"] = title
             history_metadata["date"] = conversation_dict["createdAt"]
 
+        print(history_metadata)
         ## Format the incoming message object in the "chat/completions" messages format
         ## then write it to the conversation history in cosmos
         messages = request_json["messages"]
@@ -955,6 +956,7 @@ async def add_conversation():
         request_body = await request.get_json()
         history_metadata["conversation_id"] = conversation_id
         request_body["history_metadata"] = history_metadata
+        print(request_body)
         return await conversation_internal(request_body)
 
     except Exception as e:

@@ -132,7 +132,7 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
         return res
     })
     .catch((err) => {
-        console.log(err)
+        console.log("There was an issue fetching your data.")
         console.error("There was an issue fetching your data.");
         return new Response;
     })
