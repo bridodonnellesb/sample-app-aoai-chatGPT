@@ -10,7 +10,7 @@ import { isEmpty } from "lodash";
 import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
-import Contoso from "../../assets/Contoso.svg";
+import Contoso from "../../assets/EI.svg";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
 
 import {
@@ -731,7 +731,8 @@ const Chat = () => {
                                         },
                                         root: {
                                             color: '#FFFFFF',
-                                            background: "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)"
+                                            background: '#009FDA'
+                                            // background: "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)"
                                         },
                                         rootDisabled: {
                                             background: "#F0F0F0"
@@ -743,7 +744,7 @@ const Chat = () => {
                                     disabled={disabledButton()}
                                     aria-label="start a new chat button"
                                 />}
-                                <CommandBarButton
+                                {/* <CommandBarButton
                                     role="button"
                                     styles={{
                                         icon: {
@@ -765,7 +766,7 @@ const Chat = () => {
                                     onClick={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? clearChat : newChat}
                                     disabled={disabledButton()}
                                     aria-label="clear chat button"
-                                />
+                                /> */}
                                 <Dialog
                                     hidden={hideErrorDialog}
                                     onDismiss={handleErrorDialogClose}
