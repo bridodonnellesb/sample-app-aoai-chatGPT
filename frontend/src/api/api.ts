@@ -119,6 +119,7 @@ export const historyGenerate = async (options: ConversationRequest, abortSignal:
             messages: options.messages
         })
     }
+    console.log(body)
     const response = await fetch("/history/generate", {
         method: "POST",
         headers: {

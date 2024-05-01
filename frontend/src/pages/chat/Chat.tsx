@@ -310,6 +310,7 @@ const Chat = () => {
         let result = {} as ChatResponse;
         try {
             const response = conversationId ? await historyGenerate(request, abortController.signal, conversationId) : await historyGenerate(request, abortController.signal);
+            console.log(response);
             if (!response?.ok) {
                 const responseJson = await response.json();
                 var errorResponseMessage = responseJson.error === undefined ? "Please try again. If the problem persists, please contact the site administrator." : responseJson.error;
