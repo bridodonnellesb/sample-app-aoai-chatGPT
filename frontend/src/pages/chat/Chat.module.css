@@ -104,6 +104,7 @@
     margin-bottom: 12px;
     max-width: 80%;
     display: flex;
+    font-size: 10px;
 }
 
 .chatMessageError {
