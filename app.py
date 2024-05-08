@@ -1403,7 +1403,7 @@ async def add_page():
     except Exception as e:
         logging.exception("Exception in /skillset/page")
         exception = str(e)
-        return jsonify({"error": first}), 500
+        return jsonify({"error": type(first)}), 500
 
 
 app = create_app()
