@@ -1381,7 +1381,7 @@ async def add_page():
     try:
         request_json = await request.get_json()
         values = request_json.get("values", None)
-        first = values[0].get("data",None)
+        first = values[0]
         offsets = first.get("offset",None)
         pages = first.get("pages",None)
         page_list = []
