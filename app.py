@@ -1381,31 +1381,30 @@ async def add_page():
     try:
         request_json = await request.get_json()
         offsets = request_json.get("offsets", None)
-        pages = request_json.get("pages", None)
+        # pages = request_json.get("pages", None)
 
-        page_list = []
-        previous_offset = 0
-        index = 0
-        for offset in offsets:
-            index += 1
-            page_list.append({"Page": index, "Start": previous_offset + 1, "End": offset})
-            previous_offset = offset
+        # page_list = []
+        # previous_offset = 0
+        # index = 0
+        # for offset in offsets:
+        #     index += 1
+        #     page_list.append({"Page": index, "Start": previous_offset + 1, "End": offset})
+        #     previous_offset = offset
 
-        pageNumbers = []
-        total_offset = 0
-        for text in pages:
-            pageNumbers.append(getPage(total_offset + 1, page_list))
-            total_offset += len(text) - 500
+        # pageNumbers = []
+        # total_offset = 0
+        # for text in pages:
+        #     pageNumbers.append(getPage(total_offset + 1, page_list))
+        #     total_offset += len(text) - 500
+            
+        return jsonify({"pageNumber": offsets}), 200  # Status code should be 200 for success
 
-        return jsonify({"pageNumber": pageNumbers}), 200  # Status code should be 200 for success
+        # return jsonify({"pageNumber": pageNumbers}), 200  # Status code should be 200 for success
 
     except Exception as e:
         logging.exception("Exception in /skillset/page")
         exception = str(e)
-        if "Invalid credentials" in exception:
-            return jsonify({"error": exception}), 401
-        else:
-            return jsonify({"error": exception}), 500
+        return jsonify({"error": exception}), 500
 
 
 app = create_app()
