@@ -42,7 +42,7 @@ export function parseAnswer(answer: AskResponse): ParsedAnswer {
           citation.reindex_id = citationReindex.toString(); // reindex from 1 for display
           const pageIndex = citation.filepath ? citation.filepath.match(/\d+$/) : null;
 
-          citation.page = pageIndex ? pages[(parseInt(pageIndex[0], 10))] : null;
+          citation.page = pageIndex ? pages[(parseInt(pageIndex[0], 10))].toString() : null;
           filteredCitations.push(citation);
         }
     })
