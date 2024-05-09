@@ -1398,12 +1398,12 @@ async def add_page():
             pageNumbers.append(getPage(total_offset + 1, page_list))
             total_offset += len(text) - 500
             
-        return jsonify({"pageNumber": pageNumbers}), 200  # Status code should be 200 for success
+        return jsonify({"values":[{"recordId":"0","data":{"pageNumber": pageNumbers},"errors":None,"warnings":None}]}), 200  # Status code should be 200 for success
 
     except Exception as e:
         logging.exception("Exception in /skillset/page")
         exception = str(e)
-        return jsonify({"error": json.dumps(list(data.keys()))}), 500
+        return jsonify({"error": str(len(values))}), 500
 
 
 app = create_app()
