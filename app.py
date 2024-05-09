@@ -1383,7 +1383,7 @@ async def add_page():
         values = request_json.get("values", None)
         data = values[0]["data"]
         offsets = data["offsets"]
-        pages = data["pages"]
+        pages = data["page"]
         page_list = []
         previous_offset = 0
         index = 0
@@ -1403,7 +1403,7 @@ async def add_page():
     except Exception as e:
         logging.exception("Exception in /skillset/page")
         exception = str(e)
-        return jsonify({"error": str(data)}), 500
+        return jsonify({"error": data.keys()}), 500
 
 
 app = create_app()
