@@ -35,10 +35,13 @@ export function parseAnswer(answer: AskResponse): ParsedAnswer {
         let citation = cloneDeep(answer.citations[Number(citationIndex) - 1]) as Citation;
         if (!filteredCitations.find((c) => c.id === citationIndex) && citation) {
           answerText = answerText.replaceAll(link, ` ^${++citationReindex}^ `);
+          let content = citation.content.split("\n")
+          citation.content = content[0]
+          let pages = content[1].replace("[","").replace("[","").split(",")
           citation.id = citationIndex; // original doc index to de-dupe
           citation.reindex_id = citationReindex.toString(); // reindex from 1 for display
-          const pageNumber = citation.filepath ? citation.filepath.match(/\d+$/) : null;
-          citation.page = pageNumber ? (parseInt(pageNumber[0], 10)).toString() : null;
+          let pageNumber = citation.filepath ? citation.filepath.match(/\d+$/) : null;
+          citation.page = pageNumber ? pages[(parseInt(pageNumber[0], 10))].toString() : null;
           filteredCitations.push(citation);
         }
     })
