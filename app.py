@@ -1384,7 +1384,7 @@ async def add_page():
         array = []
         id = 0
         for item in values:
-            offsets = item["data"]["offset"]
+            offsets = item["data"]["offsets"]
             pages = item["data"]["pages"]
             page_list = []
             previous_offset = 0
