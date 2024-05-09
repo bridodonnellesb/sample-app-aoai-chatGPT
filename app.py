@@ -1383,7 +1383,7 @@ async def add_page():
         values = request_json.get("values", None)
         data = values[0]["data"]
         offsets = data["offsets"]
-        pages = data["page"]
+        pages = data["pages"]
         page_list = []
         previous_offset = 0
         index = 0
