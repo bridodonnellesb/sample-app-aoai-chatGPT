@@ -57,6 +57,7 @@ const Chat = () => {
     const [clearingChat, setClearingChat] = useState<boolean>(false);
     const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true);
     const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
+    const [iframeState, setIframeState] = useState<number>(0);
 
     const errorDialogContentProps = {
         type: DialogType.close,
@@ -532,6 +533,10 @@ const Chat = () => {
         setIsLoading(false);
     }
 
+    const iframeRefresh = () => {
+        setIframeState(iframeState+1);
+    }
+
     useEffect(() => {
         if (appStateContext?.state.currentChat) {
             setMessages(appStateContext.state.currentChat.messages)
@@ -607,6 +612,7 @@ const Chat = () => {
     const onShowCitation = (citation: Citation) => {
         setActiveCitation(citation);
         setIsCitationPanelOpen(true);
+        iframeRefresh();
     };
 
     const onViewSource = (citation: Citation) => {
@@ -794,7 +800,7 @@ const Chat = () => {
                                 <IconButton iconProps={{ iconName: 'Cancel' }} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)} />
                             </Stack>
                             <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
-                            <iframe src={activeCitation.url+"#page="+activeCitation.page} width="100%" height="100%"></iframe>
+                            <iframe key={iframeState} src={activeCitation.url+"#page="+activeCitation.page} width="100%" height="100%"></iframe>
                             {/* <div tabIndex={0}>
                                 <ReactMarkdown
                                     linkTarget="_blank"
