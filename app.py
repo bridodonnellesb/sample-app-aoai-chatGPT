@@ -1403,7 +1403,7 @@ async def add_page():
             output={
                 "recordId": id,
                 "data": {
-                    "pageNumber": pageNumbers
+                    "/pages/#/pageNumber": pageNumbers
                 },
                 "errors": None,
                 "warnings": None
