@@ -731,7 +731,7 @@ def prepare_model_args(request_body):
             messages.append({"role": message["role"], "content": message["content"]})
 
     filter = request_messages[-1]["filter"]
-    filter_string = ' or '.join(f"(category eq '[{item}]')" for item in filter)
+    filter_string = ' or '.join(f"(application eq '[{item}]')" for item in filter)
 
     model_args = {
         "messages": messages,
