@@ -49,7 +49,6 @@ UI_CHAT_DESCRIPTION = (
 UI_FAVICON = os.environ.get("UI_FAVICON") or "/favicon.ico"
 UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() == "true"
 
-
 def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
