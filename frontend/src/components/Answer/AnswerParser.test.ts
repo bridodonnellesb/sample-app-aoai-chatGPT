@@ -13,7 +13,7 @@ const sampleCitations: Citation[] = [
     metadata: null,
     chunk_id: null,
     reindex_id: null,
-    page: null,
+    // page: null,
   },
   {
     id: "doc2",
@@ -25,7 +25,7 @@ const sampleCitations: Citation[] = [
     metadata: null,
     chunk_id: null,
     reindex_id: null,
-    page: null,
+    // page: null,
   },
   {
     id: "doc3",
@@ -37,7 +37,7 @@ const sampleCitations: Citation[] = [
     metadata: null,
     chunk_id: null,
     reindex_id: null,
-    page: null,
+    // page: null,
   },
 ];
 
