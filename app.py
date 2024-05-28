@@ -391,7 +391,7 @@ def init_cosmosdb_client():
     return cosmos_conversation_client
 
 
-def get_configured_data_source():
+def get_configured_data_source(filter):
     data_source = {}
     query_type = "simple"
     if DATASOURCE_TYPE == "AzureCognitiveSearch":
@@ -405,18 +405,18 @@ def get_configured_data_source():
             query_type = "semantic"
 
         # Set filter
-        filter = None
-        userToken = None
-        if AZURE_SEARCH_PERMITTED_GROUPS_COLUMN:
-            userToken = request.headers.get("X-MS-TOKEN-AAD-ACCESS-TOKEN", "")
-            logging.debug(f"USER TOKEN is {'present' if userToken else 'not present'}")
-            if not userToken:
-                raise Exception(
-                    "Document-level access control is enabled, but user access token could not be fetched."
-                )
+        # filter = None
+        # userToken = None
+        # if AZURE_SEARCH_PERMITTED_GROUPS_COLUMN:
+        #     userToken = request.headers.get("X-MS-TOKEN-AAD-ACCESS-TOKEN", "")
+        #     logging.debug(f"USER TOKEN is {'present' if userToken else 'not present'}")
+        #     if not userToken:
+        #         raise Exception(
+        #             "Document-level access control is enabled, but user access token could not be fetched."
+        #         )
 
-            filter = generateFilterString(userToken)
-            logging.debug(f"FILTER: {filter}")
+        #     filter = generateFilterString(userToken)
+        #     logging.debug(f"FILTER: {filter}")
 
         # Set authentication
         authentication = {}
@@ -730,6 +730,9 @@ def prepare_model_args(request_body):
         if message:
             messages.append({"role": message["role"], "content": message["content"]})
 
+    filter = request_messages[-1]["filter"]
+    filter_string = ' or '.join(f"(category eq '[{item}]')" for item in filter)
+
     model_args = {
         "messages": messages,
         "temperature": float(AZURE_OPENAI_TEMPERATURE),
@@ -745,7 +748,7 @@ def prepare_model_args(request_body):
     }
 
     if SHOULD_USE_DATA:
-        model_args["extra_body"] = {"data_sources": [get_configured_data_source()]}
+        model_args["extra_body"] = {"data_sources": [get_configured_data_source(filter_string)]}
 
     model_args_clean = copy.deepcopy(model_args)
     if model_args_clean.get("extra_body"):
