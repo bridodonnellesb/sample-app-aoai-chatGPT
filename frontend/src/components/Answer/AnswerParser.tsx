@@ -31,20 +31,31 @@ export function parseAnswer(answer: AskResponse): ParsedAnswer {
     let citationReindex = 0;
     citationLinks?.forEach(link => {
         // Replacing the links/citations with number
-        let citationIndex = link.slice(lengthDocN, link.length - 1);
-        let citation = cloneDeep(answer.citations[Number(citationIndex) - 1]) as Citation;
-        if (!filteredCitations.find((c) => c.id === citationIndex) && citation) {
-          answerText = answerText.replaceAll(link, ` ^${++citationReindex}^ `);
-          let content = citation.content.split("\n")
-          citation.content = content[0]
-        //   let pages = content[1].replace("[","").replace("[","").split(",")
-          citation.id = citationIndex; // original doc index to de-dupe
-          citation.reindex_id = citationReindex.toString(); // reindex from 1 for display
-        //   let pageNumber = citation.filepath ? citation.filepath.match(/\d+$/) : null;
-        //   citation.page = pageNumber ? pages[(parseInt(pageNumber[0], 10))].toString() : null;
-          filteredCitations.push(citation);
+        const citationIndex = link.slice(lengthDocN, link.length - 1)
+        const citation = cloneDeep(answer.citations[Number(citationIndex) - 1]) as Citation
+        if (!filteredCitations.find(c => c.id === citationIndex) && citation) {
+          answerText = answerText.replaceAll(link, ` ^${++citationReindex}^ `)
+          citation.id = citationIndex // original doc index to de-dupe
+          citation.reindex_id = citationReindex.toString() // reindex from 1 for display
+          filteredCitations.push(citation)
         }
     })
+    // citationLinks?.forEach(link => {
+    //     // Replacing the links/citations with number
+    //     let citationIndex = link.slice(lengthDocN, link.length - 1);
+    //     let citation = cloneDeep(answer.citations[Number(citationIndex) - 1]) as Citation;
+    //     if (!filteredCitations.find((c) => c.id === citationIndex) && citation) {
+    //       answerText = answerText.replaceAll(link, ` ^${++citationReindex}^ `);
+    //       let content = citation.content.split("\n")
+    //       citation.content = content[0]
+    //       let pages = content[1].replace("[","").replace("[","").split(",")
+    //       citation.id = citationIndex; // original doc index to de-dupe
+    //       citation.reindex_id = citationReindex.toString(); // reindex from 1 for display
+    //       let pageNumber = citation.filepath ? citation.filepath.match(/\d+$/) : null;
+    //       citation.page = pageNumber ? pages[(parseInt(pageNumber[0], 10))].toString() : null;
+    //       filteredCitations.push(citation);
+    //     }
+    // })
 
     filteredCitations = enumerateCitations(filteredCitations);
 
