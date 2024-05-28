@@ -57,7 +57,7 @@ const Chat = () => {
     const [clearingChat, setClearingChat] = useState<boolean>(false);
     const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true);
     const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
-    const [iframeState, setIframeState] = useState<number>(0);
+    // const [iframeState, setIframeState] = useState<number>(0);
 
     const errorDialogContentProps = {
         type: DialogType.close,
@@ -533,9 +533,9 @@ const Chat = () => {
         setIsLoading(false);
     }
 
-    const iframeRefresh = () => {
-        setIframeState(iframeState+1);
-    }
+    // const iframeRefresh = () => {
+    //     setIframeState(iframeState+1);
+    // }
 
     useEffect(() => {
         if (appStateContext?.state.currentChat) {
@@ -611,8 +611,9 @@ const Chat = () => {
 
     const onShowCitation = (citation: Citation) => {
         setActiveCitation(citation);
+        console.log(citation)
         setIsCitationPanelOpen(true);
-        iframeRefresh();
+        // iframeRefresh();
     };
 
     const onViewSource = (citation: Citation) => {
