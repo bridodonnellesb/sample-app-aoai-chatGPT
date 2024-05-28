@@ -42,7 +42,6 @@ jobs:
           path: |
             release.zip
             !venv/
-
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -66,4 +65,4 @@ jobs:
         with:
           app-name: 'knowledge-management-agent'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E9FC5650900246E2B99DA667D69DA109 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_81035A0076E24FE597E5AD6E5F8636AD }}
