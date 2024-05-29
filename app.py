@@ -453,7 +453,7 @@ def get_configured_data_source(filter):
                         parse_multi_columns(AZURE_SEARCH_VECTOR_COLUMNS)
                         if AZURE_SEARCH_VECTOR_COLUMNS
                         else []
-                    ),
+                    )
                 },
                 "in_scope": (
                     True if AZURE_SEARCH_ENABLE_IN_DOMAIN.lower() == "true" else False
@@ -731,7 +731,10 @@ def prepare_model_args(request_body):
             messages.append({"role": message["role"], "content": message["content"]})
 
     filter = request_messages[-1]["filter"]
-    filter_string = ' or '.join(f"(application eq '[{item}]')" for item in filter)
+    if len(filter)>0:
+       filter_string = ' or '.join(f"(application eq '[{item}]')" for item in filter)
+    else:
+        filter_string=""
 
     model_args = {
         "messages": messages,
@@ -788,10 +791,10 @@ def prepare_model_args(request_body):
 
     return model_args
 
-def getPage(number, page_list):
-    for page_info in page_list:
-        if page_info["Start"] <= number and page_info["End"] >= number:
-            return page_info["Page"]
+def getPage(midpoint_offset, page_list):
+    for page in page_list:
+        if page["Start"] <= midpoint_offset <= page["End"]:
+            return page["Page"]
     return None  # Return None if no page matches
 
 async def promptflow_request(request):
@@ -1394,15 +1397,17 @@ async def add_page():
             index = 0
             for offset in offsets:
                 index += 1
-                page_list.append({"Page": index, "Start": previous_offset + 1, "End": offset})
+                midpoint = (previous_offset + offset) // 2  # Calculate the midpoint
+                page_list.append({"Page": index, "Start": previous_offset + 1, "End": offset, "Midpoint": midpoint})
                 previous_offset = offset
 
             pageNumbers = []
             total_offset = 0
             for text in pages:
-                pageNumbers.append(getPage(total_offset + 1, page_list))
+                midpoint_offset = total_offset + (len(text) - 500) // 2  # Calculate the midpoint for the current page
+                pageNumbers.append(getPage(midpoint_offset, page_list))  # Use the midpoint to get the page number
                 total_offset += len(text) - 500
-            
+
             output={
                 "recordId": id,
                 "data": {
