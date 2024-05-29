@@ -1,6 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import styles from "./Layout.module.css";
-import Contoso from "../../assets/EI.svg";
+import EI from "../../assets/EI.svg";
 import { CopyRegular } from "@fluentui/react-icons";
 import { Dialog, Stack, TextField, Dropdown, IDropdownOption } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
@@ -98,7 +98,7 @@ const Layout = () => {
                 <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
                     <Stack horizontal verticalAlign="center">
                         <img
-                            src={ui?.logo ? ui.logo : Contoso}
+                            src={ui?.logo ? ui.logo : EI}
                             className={styles.headerIcon}
                             aria-hidden="true"
                         />

@@ -66,4 +66,4 @@ jobs:
         with:
           app-name: 'knowledge-management-agent'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_81035A0076E24FE597E5AD6E5F8636AD }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_43CDD6E11D7148B4B01688B6699C5219 }}
