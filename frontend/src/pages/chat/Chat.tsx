@@ -565,7 +565,6 @@ const Chat = () => {
                 if (!noContentError?.content.includes(NO_CONTENT_ERROR)) {
                     saveToDB(appStateContext.state.currentChat.messages, appStateContext.state.currentChat.id)
                         .then((res) => {
-                            console.log(res)
                             if (!res.ok) {
                                 let errorMessage = "An error occurred. Answers can't be saved at this time. If the problem persists, please contact the site administrator.";
                                 let errorChatMsg: ChatMessage = {
@@ -597,7 +596,6 @@ const Chat = () => {
                 }
             } else {
             }
-            console.log(messages)
             appStateContext?.dispatch({ type: 'UPDATE_CHAT_HISTORY', payload: appStateContext.state.currentChat });
             setMessages(appStateContext.state.currentChat.messages)
             setProcessMessages(messageStatus.NotRunning)
