@@ -2,7 +2,7 @@ import { Outlet, Link } from "react-router-dom";
 import styles from "./Layout.module.css";
 import EI from "../../assets/EI.svg";
 import { CopyRegular } from "@fluentui/react-icons";
-import { Dialog, Stack, TextField, Dropdown, IDropdownOption } from "@fluentui/react";
+import { Dialog, Stack, TextField } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
 import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
@@ -64,34 +64,6 @@ const Layout = () => {
         return () => window.removeEventListener('resize', handleResize);
       }, []);
 
-    const dropdownOptions = [
-        { key: 'CRM7', text: 'CRM7' },
-        { key: 'SAP', text: 'SAP' }
-    ];
-
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-
-    const onDropdownChange = (
-        event: React.FormEvent<HTMLDivElement>,
-        option?: IDropdownOption, // option is now optional and matches IDropdownOption type
-        index?: number // index is optional and of type number
-    ): void => {
-        if (option) {
-            const newSelectedKeys = option.selected
-                ? [...selectedKeys, option.key as string]
-                : selectedKeys.filter(key => key !== option.key);
-
-            // Update the local state
-            setSelectedKeys(newSelectedKeys);
-
-            // Dispatch the action to update the AppStateContext
-            appStateContext?.dispatch({
-                type: 'UPDATE_SELECTED_OPTIONS',
-                payload: newSelectedKeys,
-            });
-        }
-    };
-
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
@@ -110,14 +82,6 @@ const Layout = () => {
                         {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) &&
                             <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel} />
                         }
-                        <Dropdown
-                            placeholder="Select options"
-                            multiSelect
-                            options={dropdownOptions}
-                            selectedKeys={selectedKeys}
-                            onChange={onDropdownChange}
-                            styles={{ dropdown: { width: 150 } }} // Adjust width as needed
-                        />
                         {ui?.show_share_button &&<ShareButton onClick={handleShareClick} text={shareLabel} />}
                     </Stack>
                 </Stack>
