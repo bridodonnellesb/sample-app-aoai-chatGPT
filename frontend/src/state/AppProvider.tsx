@@ -11,7 +11,6 @@ export interface AppState {
     currentChat: Conversation | null;
     frontendSettings: FrontendSettings | null;
     feedbackState: { [answerId: string]: Feedback.Neutral | Feedback.Positive | Feedback.Negative; };
-    selectedOptions: string[];
 }
 
 export type Action =
@@ -28,9 +27,7 @@ export type Action =
     | { type: 'FETCH_CHAT_HISTORY', payload: Conversation[] | null }  // API Call
     | { type: 'FETCH_FRONTEND_SETTINGS', payload: FrontendSettings | null }  // API Call
     | { type: 'SET_FEEDBACK_STATE'; payload: { answerId: string; feedback: Feedback.Positive | Feedback.Negative | Feedback.Neutral } }
-    | { type: 'GET_FEEDBACK_STATE'; payload: string }
-    | { type: 'UPDATE_SELECTED_OPTIONS', payload: string[] };
-
+    | { type: 'GET_FEEDBACK_STATE'; payload: string };
 
 const initialState: AppState = {
     isChatHistoryOpen: false,
@@ -43,8 +40,7 @@ const initialState: AppState = {
         status: CosmosDBStatus.NotConfigured,
     },
     frontendSettings: null,
-    feedbackState: {},
-    selectedOptions: []
+    feedbackState: {}
 };
 
 export const AppStateContext = createContext<{

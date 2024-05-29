@@ -44,7 +44,6 @@ const enum messageStatus {
 const Chat = () => {
     const appStateContext = useContext(AppStateContext)
     const ui = appStateContext?.state.frontendSettings?.ui;
-    const filters = appStateContext?.state.selectedOptions;
     const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled;
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -160,7 +159,6 @@ const Chat = () => {
             role: "user",
             content: question,
             date: new Date().toISOString(),
-            filter: filters
         };
 
         let conversation: Conversation | null | undefined;
@@ -285,7 +283,6 @@ const Chat = () => {
             role: "user",
             content: question,
             date: new Date().toISOString(),
-            filter: filters
         };
 
         //api call params set here (generate)
