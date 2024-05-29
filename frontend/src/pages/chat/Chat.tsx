@@ -10,7 +10,7 @@ import { isEmpty } from "lodash";
 import DOMPurify from 'dompurify';
 
 import styles from "./Chat.module.css";
-import Contoso from "../../assets/EI.svg";
+import EI from "../../assets/EI.svg";
 import { XSSAllowTags } from "../../constants/xssAllowTags";
 
 import {
@@ -657,7 +657,7 @@ const Chat = () => {
                         {!messages || messages.length < 1 ? (
                             <Stack className={styles.chatEmptyState}>
                                 <img
-                                    src={ui?.chat_logo ? ui.chat_logo : Contoso}
+                                    src={ui?.chat_logo ? ui.chat_logo : EI}
                                     className={styles.chatIcon}
                                     aria-hidden="true"
                                 />
