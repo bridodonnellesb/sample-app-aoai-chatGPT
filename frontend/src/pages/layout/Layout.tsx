@@ -106,7 +106,7 @@ const Layout = () => {
                             <h1 className={styles.headerTitle}>{ui?.title}</h1>
                         </Link>
                     </Stack>
-                    <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
+                    <Stack horizontal tokens={{ childrenGap: 10 }} className={styles.shareButtonContainer}>
                         <Dropdown
                             placeholder="Select system to filter by"
                             multiSelect

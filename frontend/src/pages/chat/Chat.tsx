@@ -711,7 +711,7 @@ const Chat = () => {
                             </div>
                         )}
 
-                        <Stack horizontal tokens={{ childrenGap: 200 }} className={styles.chatInput}>
+                        <Stack horizontal className={styles.chatInput}>
                             {isLoading && (
                                 <Stack
                                     horizontal
