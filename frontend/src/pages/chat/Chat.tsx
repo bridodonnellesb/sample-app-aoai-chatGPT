@@ -726,6 +726,7 @@ const Chat = () => {
                                     <span className={styles.stopGeneratingText} aria-hidden="true">Stop generating</span>
                                 </Stack>
                             )}
+                            <Stack>
                                 {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && 
                                 <CommandBarButton
                                     role="button"
@@ -752,7 +753,6 @@ const Chat = () => {
                                     aria-label="start a new chat button"
                                 /> 
                                 }
-                            <Stack>
                                 <Dialog
                                     hidden={hideErrorDialog}
                                     onDismiss={handleErrorDialogClose}
