@@ -107,17 +107,17 @@ const Layout = () => {
                         </Link>
                     </Stack>
                     <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>
-                        {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) &&
-                            <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel} />
-                        }
                         <Dropdown
-                            placeholder="Select options"
+                            placeholder="Select system to filter by"
                             multiSelect
                             options={dropdownOptions}
                             selectedKeys={selectedKeys}
                             onChange={onDropdownChange}
-                            styles={{ dropdown: { width: 150 } }} // Adjust width as needed
+                            styles={{ dropdown: { width: 250 } }} // Adjust width as needed
                         />
+                        {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) &&
+                            <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel} />
+                        }
                         {ui?.show_share_button &&<ShareButton onClick={handleShareClick} text={shareLabel} />}
                     </Stack>
                 </Stack>
