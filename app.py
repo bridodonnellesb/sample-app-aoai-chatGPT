@@ -732,7 +732,7 @@ def prepare_model_args(request_body):
 
     filter_array = request_messages[-1]["filter"]
     filter = ' '.join(str(item) for item in filter_array)
-    if len(filter)>0:
+    if len(filter_array)>0:
        filter_string = f"search.in(system, '{filter}')"
     else:
         filter_string=""
