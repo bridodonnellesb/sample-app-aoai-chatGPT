@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect } from "react";
 import { CommandBarButton, IconButton, Dialog, DialogType, Stack, Dropdown, IDropdownOption } from "@fluentui/react";
-import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
+import { SquareRegular, ShieldLockRegular, ErrorCircleRegular, FilterDismiss16Regular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm'
@@ -126,7 +126,6 @@ const Chat = () => {
             assistantMessage = resultMessage
             assistantMessage.content = assistantContent
             
-            console.log(messages)
             if (resultMessage.context) {
                 toolMessage = {
                     id: uuid(),
@@ -163,7 +162,7 @@ const Chat = () => {
             date: new Date().toISOString(),
             filter: filters
         };
-
+        console.log(filters)
         let conversation: Conversation | null | undefined;
         if (!conversationId) {
             conversation = {
