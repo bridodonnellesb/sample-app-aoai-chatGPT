@@ -66,7 +66,8 @@ const Layout = () => {
 
     const dropdownOptions = [
         { key: 'CRM7', text: 'CRM7' },
-        { key: 'SAP', text: 'SAP' }
+        { key: 'SRP', text: 'SRP' },
+        { key: 'IRP', text: 'IRP' }
     ];
 
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
