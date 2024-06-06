@@ -730,7 +730,8 @@ def prepare_model_args(request_body):
         if message:
             messages.append({"role": message["role"], "content": message["content"]})
 
-    filter = request_messages[-1]["filter"]
+    filter_array = request_messages[-1]["filter"]
+    filter = ' '.join(str(item) for item in filter_array)
     if len(filter)>0:
        filter_string = f"search.in(system, '{filter}')"
     else:
