@@ -126,7 +126,7 @@ const Chat = () => {
             assistantMessage = resultMessage
             assistantMessage.content = assistantContent
             
-            console.log(assistantMessage)
+            console.log(messages)
             if (resultMessage.context) {
                 toolMessage = {
                     id: uuid(),
