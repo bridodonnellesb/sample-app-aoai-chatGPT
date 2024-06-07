@@ -162,7 +162,15 @@ const Chat = () => {
             date: new Date().toISOString(),
             filter: filters
         };
-        console.log(filters)
+
+        if (Array.isArray(filters)){
+            let filter = filters.join(' ');
+            let filterString: string = '';
+            if (filters.length > 0) {
+                filterString = `search.in(system, '${filter}')`;
+            }
+            console.log(filterString)
+        }
         let conversation: Conversation | null | undefined;
         if (!conversationId) {
             conversation = {
@@ -287,7 +295,14 @@ const Chat = () => {
             date: new Date().toISOString(),
             filter: filters
         };
-
+        if (Array.isArray(filters)){
+            let filter = filters.join(' ');
+            let filterString: string = '';
+            if (filters.length > 0) {
+                filterString = `search.in(system, '${filter}')`;
+            }
+            console.log(filterString)
+        }
         //api call params set here (generate)
         let request: ConversationRequest;
         let conversation;
