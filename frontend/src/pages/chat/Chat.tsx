@@ -249,6 +249,7 @@ const Chat = () => {
                 conversation.messages.push(toolMessage, assistantMessage)
                 appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: conversation });
                 setMessages([...messages, toolMessage, assistantMessage]);
+                console.log(messages)
             }
 
         } catch (e) {
@@ -511,6 +512,7 @@ const Chat = () => {
             abortFuncs.current = abortFuncs.current.filter(a => a !== abortController);
             setProcessMessages(messageStatus.Done)
         }
+        console.log(messages)
         return abortController.abort();
 
     }
