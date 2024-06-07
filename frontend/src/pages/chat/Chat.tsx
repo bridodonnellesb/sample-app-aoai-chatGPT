@@ -163,14 +163,6 @@ const Chat = () => {
             filter: filters
         };
 
-        if (Array.isArray(filters)){
-            let filter = filters.join(' ');
-            let filterString: string = '';
-            if (filters.length > 0) {
-                filterString = `search.in(system, '${filter}')`;
-            }
-            console.log(filterString)
-        }
         let conversation: Conversation | null | undefined;
         if (!conversationId) {
             conversation = {
@@ -249,7 +241,6 @@ const Chat = () => {
                 conversation.messages.push(toolMessage, assistantMessage)
                 appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: conversation });
                 setMessages([...messages, toolMessage, assistantMessage]);
-                console.log(messages)
             }
 
         } catch (e) {
@@ -296,14 +287,6 @@ const Chat = () => {
             date: new Date().toISOString(),
             filter: filters
         };
-        if (Array.isArray(filters)){
-            let filter = filters.join(' ');
-            let filterString: string = '';
-            if (filters.length > 0) {
-                filterString = `search.in(system, '${filter}')`;
-            }
-            console.log(filterString)
-        }
         //api call params set here (generate)
         let request: ConversationRequest;
         let conversation;
@@ -512,7 +495,6 @@ const Chat = () => {
             abortFuncs.current = abortFuncs.current.filter(a => a !== abortController);
             setProcessMessages(messageStatus.Done)
         }
-        console.log(messages)
         return abortController.abort();
 
     }
