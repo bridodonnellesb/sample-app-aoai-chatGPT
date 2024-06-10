@@ -742,7 +742,7 @@ def prepare_model_args(request_body):
             messages.append({"role": message["role"], "content": message["content"]})
     
     filter_array = request_messages[-1]["filter"]
-    filter_array.sort(reverse=True)
+    filter_array.sort()
     filter_array = create_combination_strings(filter_array)
 
     if len(filter_array)>0:
