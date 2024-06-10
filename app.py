@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import uuid
+from itertools import combinations
 from dotenv import load_dotenv
 import httpx
 from quart import (
@@ -719,6 +720,16 @@ def get_configured_data_source(filter):
 
     return data_source
 
+def create_combination_strings(arr):
+    result = []
+    # Loop through each combination length starting from 2 to the length of the array
+    for i in range(2, len(arr) + 1):
+        # Generate combinations of the current length
+        for combo in combinations(arr, i):
+            # Join the elements of the combination with a comma and add to the result list
+            result = ','.join(combo)
+            arr.append(result)
+    return arr
 
 def prepare_model_args(request_body):
     request_messages = request_body.get("messages", [])
@@ -731,21 +742,13 @@ def prepare_model_args(request_body):
             messages.append({"role": message["role"], "content": message["content"]})
     
     filter_array = request_messages[-1]["filter"]
-    # if isinstance(filter_array, str):
-    #     transformed_filter = filter_array.replace("[","").replace("]").replace("'")
-    #     filter_array = transformed_filter.split(",")
-    # if len(filter_array)>0:
-    #     filter_string = f"search.in(system, '{' '.join(str(item) for item in filter_array)}')"
-    # else:
-    #     filter_string=""
+    filter_array.sort(reverse=True)
+    filter_array = create_combination_strings(filter_array)
 
     if len(filter_array)>0:
         filter_string = ' or '.join(f"(system eq '{item}')" for item in filter_array)
-        # filter_string = " and ".join(f"systems/any(s: s eq {str(item)}')" for item in filter_array)
     else:
         filter_string=""
-
-
 
     model_args = {
         "messages": messages,
