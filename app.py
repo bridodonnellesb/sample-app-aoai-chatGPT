@@ -740,7 +740,7 @@ def prepare_model_args(request_body):
     #     filter_string=""
 
     if len(filter_array)>0:
-        filter_string = ' or '.join(f"(system eq '{item}')" for item in filter)
+        filter_string = ' or '.join(f"(system eq '{item}')" for item in filter_array)
         # filter_string = " and ".join(f"systems/any(s: s eq {str(item)}')" for item in filter_array)
     else:
         filter_string=""
