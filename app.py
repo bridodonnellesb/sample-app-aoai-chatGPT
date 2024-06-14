@@ -1486,7 +1486,7 @@ async def get_formula():
         error = "intelligence connection"
         for item in values:
             image = item["data"]["image"]        
-               
+            error = image
             poller = document_analysis_client.begin_analyze_document_from_url(
                 "prebuilt-read", document_url=image,features=[AnalysisFeature.FORMULAS]
             )
