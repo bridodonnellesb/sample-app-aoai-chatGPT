@@ -21,9 +21,6 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.formrecognizer import DocumentAnalysisClient, AnalysisFeature
 from math import sqrt
 import re
-from azure.identity import DefaultAzureCredential
-from azure.storage.blob import BlobServiceClient, ContentSettings
-import os
 
 from openai import AsyncAzureOpenAI
 from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
@@ -62,9 +59,6 @@ UI_SHOW_SHARE_BUTTON = os.environ.get("UI_SHOW_SHARE_BUTTON", "true").lower() ==
 # Document Intelligence Configuration
 DOCUMENT_INTELLIGENCE_ENDPOINT = os.environ.get("DOCUMENT_INTELLIGENCE_ENDPOINT")
 DOCUMENT_INTELLIGENCE_KEY = os.environ.get("DOCUMENT_INTELLIGENCE_KEY")
-# Blob Storage
-BLOB_CREDENTIAL = os.environ.get("BLOB_CREDENTIAL")
-BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
 
 def create_app():
     app = Quart(__name__)
@@ -1460,7 +1454,6 @@ def distance_from_top_left(point):
     return sqrt(point.x**2 + point.y**2)
     
 def screenshot_formula(page_filepath, formula_filepath, points):
-    blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
     image = Image.open(page_filepath)
     x1, y1 = points[0].x, points[0].y
     x2, y2 = points[2].x, points[2].y
@@ -1493,8 +1486,8 @@ async def add_page():
 
             for formula_id, f in enumerate(result.pages[0].formulas):
                 if f.kind == "display":
-                    screenshot_formula(image,f"{re.search(r'binary/(.+?)\.jpg', image).group(1)}_{formula_id}.jpg",f.polygon)
-                    lines.append({"polygon":f.polygon, "content":f"{re.search(r'binary/(.+?)\.jpg', image).group(1)}_formula_{formula_id}.jpg", "type":"formula"})
+                    screenshot_formula(input_file,f"{re.search(r'binary/(.+?)\.jpg', input_file).group(1)}_{formula_id}.jpg",f.polygon)
+                    lines.append({"polygon":f.polygon, "content":f"{re.search(r'binary/(.+?)\.jpg', input_file).group(1)}_formula_{formula_id}.jpg", "type":"formula"})
 
             sorted_objects = sorted(lines, key=lambda obj: distance_from_top_left(obj["polygon"][0]))
 
@@ -1510,7 +1503,7 @@ async def add_page():
             output={
                 "recordId": id,
                 "data": {
-                    "formula": formulas,
+                    "formula": formulas
                     "offset": offsets
                 },
                 "errors": None,
