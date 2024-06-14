@@ -1515,7 +1515,7 @@ async def add_page():
         return response, 200  # Status code should be 200 for success
 
     except Exception as e:
-        logging.exception("Exception in /skillset/formula")
+        logging.exception("Exception in /skillset/page")
         exception = str(e)
         return jsonify({"error": exception}), 500
 
