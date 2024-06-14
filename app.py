@@ -1476,26 +1476,30 @@ async def get_formula():
     try:
         request_json = await request.get_json()
         values = request_json.get("values", None)
+        error = "values"
         array = []
         id = 0
         
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
-        
+        error = "intelligence connection"
         for item in values:
-            image = item["data"]["image"]            
-            poller = document_analysis_client.begin_analyze_document(
+            image = item["data"]["image"]        
+               
+            poller = document_analysis_client.begin_analyze_document_from_url(
                 "prebuilt-read", document_url=image,features=[AnalysisFeature.FORMULAS]
             )
             result = poller.result()
-
+            error = "begin_analyze_document_from_url"
             lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
 
             for formula_id, f in enumerate(result.pages[0].formulas):
                 if f.kind == "display":
                     formula_path = re.search(r'binary/(.+?)\.jpg', image).group(1)
+                    error = "binary search"
                     screenshot_formula(image,f"{formula_path}_{formula_id}.jpg",f.polygon)
+                    error = "screenshot_formula"
                     lines.append({"polygon":f.polygon, "content":f"{formula_path}_formula_{formula_id}.jpg", "type":"formula"})
 
             sorted_objects = sorted(lines, key=lambda obj: distance_from_top_left(obj["polygon"][0]))
@@ -1526,7 +1530,7 @@ async def get_formula():
     except Exception as e:
         logging.exception("Exception in /skillset/formula")
         exception = str(e)
-        return jsonify({"error": values[0]["data"]["image"] }), 500
+        return jsonify({"error": error}), 500
 
 
 app = create_app()
