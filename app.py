@@ -1497,12 +1497,12 @@ async def get_formula():
                 lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    if f.kind == "display":
-                        formula_path = re.search(r'binary/(.+?)\.jpg', image).group(1)
-                        error = "binary search"
-                        screenshot_formula(image,f"{formula_path}_{formula_id}.jpg",f.polygon)
-                        error = "screenshot_formula"
-                        lines.append({"polygon":f.polygon, "content":f"{formula_path}_formula_{formula_id}.jpg", "type":"formula"})
+                    # if f.kind == "display":
+                        # formula_path = re.search(r'binary/(.+?)\.jpg', image).group(1)
+                    error = "binary search"
+                    screenshot_formula(image,f"{image}_{formula_id}.jpg",f.polygon)
+                    error = "screenshot_formula"
+                    lines.append({"polygon":f.polygon, "content":f"{image}_formula_{formula_id}.jpg", "type":"formula"})
 
                 sorted_objects = sorted(lines, key=lambda obj: distance_from_top_left(obj["polygon"][0]))
 
