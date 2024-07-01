@@ -6,6 +6,7 @@ import uuid
 from itertools import combinations
 from dotenv import load_dotenv
 import httpx
+import requests
 from quart import (
     Blueprint,
     Quart,
@@ -1459,9 +1460,10 @@ async def add_page():
 def distance_from_top_left(point):
     return sqrt(point.x**2 + point.y**2)
     
-def screenshot_formula(page_filepath, formula_filepath, points):
+def screenshot_formula(url, formula_filepath, points):
     blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-    image = Image.open(page_filepath)
+    response=requests.get(url)
+    image = Image.open(BytesIO(response.content))
     x1, y1 = points[0].x, points[0].y
     x2, y2 = points[2].x, points[2].y
     cropped_image = image.crop((x1, y1, x2, y2)) 
