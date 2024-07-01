@@ -1471,7 +1471,7 @@ def screenshot_formula(url, formula_filepath, points):
     cropped_image.save(image_stream, format='JPEG')  # You can change 'PNG' to the appropriate format if needed
     image_stream.seek(0)  # Seek to the beginning of the stream
     blob_client = blob_service_client.get_blob_client(container="tsc-formulas", blob=formula_filepath)
-    blob_client.upload_blob(image_stream)
+    blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
@@ -1497,7 +1497,7 @@ async def get_formula():
                 lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    pattern = r'https://[\w.-]+/([\w-]+)/binary/([\w-]+)\.jpg'
+                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/ms-az-search-indexercache-c489d848-0e43-4de4-bf2d-2dc331f5a378/([\w-]+)/binary/([\w-]+)\.jpg'
                     match = re.search(pattern, image)
                     file_source = match.group(1)
                     page_source = match.group(2)
@@ -1519,7 +1519,7 @@ async def get_formula():
                     characters += len(obj["content"])
 
                 output={
-                    "recordId": str(id),
+                    "recordId": id,
                     "data": {
                         "formula": formulas,
                         "offset": offsets
@@ -1535,7 +1535,7 @@ async def get_formula():
     except Exception as e:
         logging.exception("Exception in /skillset/formula")
         exception = str(e)
-        return jsonify({"type": type(error), "error":error}), 500
+        return jsonify({"error":error}), 500
 
 
 app = create_app()
