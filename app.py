@@ -1514,7 +1514,7 @@ async def get_formula():
                     characters += len(obj["content"])
 
                 output={
-                    "recordId": id,
+                    "recordId": str(id),
                     "data": {
                         "formula": formulas,
                         "offset": offsets
