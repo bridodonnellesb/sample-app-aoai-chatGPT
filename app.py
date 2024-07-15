@@ -1468,8 +1468,8 @@ def screenshot_formula(url, formula_filepath, points):
     x2, y2 = points[2].x, points[2].y
     cropped_image = image.crop((x1, y1, x2, y2)) 
     image_stream = BytesIO()
-    cropped_image.save(image_stream, format='JPEG')  # You can change 'PNG' to the appropriate format if needed
-    image_stream.seek(0)  # Seek to the beginning of the stream
+    cropped_image.save(image_stream, format='JPEG') 
+    image_stream.seek(0) 
     blob_client = blob_service_client.get_blob_client(container="tsc-formulas", blob=formula_filepath)
     blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
 
@@ -1488,19 +1488,22 @@ async def get_formula():
         error = "intelligence connection"
         for item in values:
             for image in item["data"]["image"]:
+                url = image["url"]
+                image = image["data"]
+
                 error = image
-                poller = document_analysis_client.begin_analyze_document_from_url(
-                    "prebuilt-read", document_url=image,features=[AnalysisFeature.FORMULAS]
+                poller = document_analysis_client.begin_analyze_document(
+                    "prebuilt-read", document=image,features=[AnalysisFeature.FORMULAS]
                 )
                 result = poller.result()
-                error = "begin_analyze_document_from_url"
+                error = "begin_analyze_document"
                 lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/ms-az-search-indexercache-c489d848-0e43-4de4-bf2d-2dc331f5a378/([\w-]+)/binary/([\w-]+)\.jpg'
-                    match = re.search(pattern, image)
-                    file_source = match.group(1)
-                    page_source = match.group(2)
+                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                    match = re.search(pattern, url)
+                    file_source = match.group(2)
+                    page_source = match.group(3)
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
                     error = "binary search"
                     screenshot_formula(image,formula_name,f.polygon)
