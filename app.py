@@ -1548,7 +1548,8 @@ async def get_formula():
                     if obj["type"]=="formula":
                         offsets.append(characters)
                         formulas.append(obj["content"])
-                    characters += len(obj["content"])
+                    else:
+                        characters += len(obj["content"])
 
                 output={
                     "recordId": id,
