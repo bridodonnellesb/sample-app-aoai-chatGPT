@@ -1495,7 +1495,7 @@ def insert_in_reading_order(array, formula):
     # Find the correct position to insert the new object
     for i, item in enumerate(array):
         if compare_reading_order(item['polygon'],new_polygon):
-            insert_index = i - 1
+            insert_index = i + 1
     # Insert the new object into the array
     array.insert(insert_index, formula)
     return array
