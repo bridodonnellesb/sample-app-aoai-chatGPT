@@ -1470,7 +1470,7 @@ def screenshot_formula(image_bytes, formula_filepath, points):
     image_stream = BytesIO()
     cropped_image.save(image_stream, format='JPEG') 
     image_stream.seek(0) 
-    blob_client = blob_service_client.get_blob_client(container="tsc-formulas", blob=formula_filepath)
+    blob_client = blob_service_client.get_blob_client(container="tsc-formulas-store", blob=formula_filepath)
     blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
 
 @bp.route("/skillset/formula", methods=["POST"])
@@ -1500,15 +1500,16 @@ async def get_formula():
                 lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                    match = re.search(pattern, url)
-                    file_source = match.group(2)
-                    page_source = match.group(3)
-                    formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
-                    error = "binary search"
-                    screenshot_formula(image_bytes,formula_name,f.polygon)
-                    error = "screenshot_formula"
-                    lines.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
+                    if f.kind == "display":
+                        pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                        match = re.search(pattern, url)
+                        file_source = match.group(2)
+                        page_source = match.group(3)
+                        formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
+                        error = "binary search"
+                        screenshot_formula(image_bytes,formula_name,f.polygon)
+                        error = "screenshot_formula"
+                        lines.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
                 sorted_objects = sorted(lines, key=lambda obj: distance_from_top_left(obj["polygon"][0]))
 
