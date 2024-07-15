@@ -1499,7 +1499,7 @@ def insert_in_reading_order(array, formula):
     # Insert the new object into the array
     array.insert(insert_index, formula)
     return array
- 
+
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
     try:
@@ -1549,7 +1549,7 @@ async def get_formula():
                         offsets.append(characters)
                         formulas.append(obj["content"])
                     else:
-                        characters += len(obj["content"])
+                        characters += (len(obj["content"])+1)
 
                 output={
                     "recordId": id,
