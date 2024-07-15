@@ -1457,9 +1457,6 @@ async def add_page():
         logging.exception("Exception in /skillset/page")
         exception = str(e)
         return jsonify({"error": exception}), 500
-
-def distance_from_top_left(point):
-    return sqrt(point.x**2 + point.y**2)
     
 def screenshot_formula(image_bytes, formula_filepath, points):
     blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
@@ -1473,6 +1470,36 @@ def screenshot_formula(image_bytes, formula_filepath, points):
     blob_client = blob_service_client.get_blob_client(container="tsc-formulas-store", blob=formula_filepath)
     blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
 
+# Define a function to get the top-left point of the bounding box
+def get_top_left(polygon):
+    min_x = min(point.x for point in polygon)
+    min_y = min(point.y for point in polygon)
+    return min_x, min_y
+ 
+# Define a function to compare the reading order of two polygons
+def compare_reading_order(polygon1, polygon2) -> bool:
+    point1_x, point1_y = get_top_left(polygon1)
+    point2_x, point2_y = get_top_left(polygon2)
+    # Compare by y-coordinate first, then by x-coordinate
+    if point1_y < point2_y:
+        return True
+    elif point1_y == point2_y and point1_x < point2_x:
+        return True
+    else:
+        return False
+ 
+# Define a function to insert a new object into the array based on the reading order
+def insert_in_reading_order(array, formula):
+    new_polygon = formula['polygon']
+    insert_index = 0
+    # Find the correct position to insert the new object
+    for i, item in enumerate(array):
+        if compare_reading_order(item['polygon'],new_polygon):
+            insert_index = i - 1
+    # Insert the new object into the array
+    array.insert(insert_index, formula)
+    return array
+ 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
     try:
@@ -1497,26 +1524,27 @@ async def get_formula():
                 )
                 result = poller.result()
                 error = "begin_analyze_document"
-                lines = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].lines]
+                words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
+                formulas = []
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    if f.kind == "display":
-                        pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                        match = re.search(pattern, url)
-                        file_source = match.group(2)
-                        page_source = match.group(3)
-                        formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
-                        error = "binary search"
-                        screenshot_formula(image_bytes,formula_name,f.polygon)
-                        error = "screenshot_formula"
-                        lines.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
+                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                    match = re.search(pattern, url)
+                    file_source = match.group(2)
+                    page_source = match.group(3)
+                    formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
+                    error = "binary search"
+                    screenshot_formula(image_bytes,formula_name,f.polygon)
+                    error = "screenshot_formula"
+                    formulas.append({"polygon":f.polygon, "content":f'![]({formula_name})', "type":"formula"})
 
-                sorted_objects = sorted(lines, key=lambda obj: distance_from_top_left(obj["polygon"][0]))
+                for formula in formulas:
+                    sorted_array = insert_in_reading_order(words, formula)
 
                 offsets = []
                 formulas = []
                 characters = 0
-                for obj in sorted_objects:
+                for obj in sorted_array:
                     if obj["type"]=="formula":
                         offsets.append(characters)
                         formulas.append(obj["content"])
