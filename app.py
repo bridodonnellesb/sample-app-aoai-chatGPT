@@ -7,6 +7,7 @@ from itertools import combinations
 from dotenv import load_dotenv
 import httpx
 import requests
+import base64
 from quart import (
     Blueprint,
     Quart,
@@ -1460,10 +1461,9 @@ async def add_page():
 def distance_from_top_left(point):
     return sqrt(point.x**2 + point.y**2)
     
-def screenshot_formula(url, formula_filepath, points):
+def screenshot_formula(image_bytes, formula_filepath, points):
     blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-    response=requests.get(url)
-    image = Image.open(BytesIO(response.content))
+    image = Image.open(BytesIO(image_bytes))
     x1, y1 = points[0].x, points[0].y
     x2, y2 = points[2].x, points[2].y
     cropped_image = image.crop((x1, y1, x2, y2)) 
@@ -1490,10 +1490,10 @@ async def get_formula():
             for image in item["data"]["image"]:
                 url = image["url"]
                 image = image["data"]
-
-                error = image
+                image_bytes = base64.b64decode(image)
+                error = url
                 poller = document_analysis_client.begin_analyze_document(
-                    "prebuilt-read", document=image,features=[AnalysisFeature.FORMULAS]
+                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
                 )
                 result = poller.result()
                 error = "begin_analyze_document"
@@ -1506,7 +1506,7 @@ async def get_formula():
                     page_source = match.group(3)
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
                     error = "binary search"
-                    screenshot_formula(image,formula_name,f.polygon)
+                    screenshot_formula(image_bytes,formula_name,f.polygon)
                     error = "screenshot_formula"
                     lines.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
