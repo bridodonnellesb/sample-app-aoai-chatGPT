@@ -1536,7 +1536,7 @@ async def get_formula():
                     error = "binary search"
                     screenshot_formula(image_bytes,formula_name,f.polygon)
                     error = "screenshot_formula"
-                    formulas.append({"polygon":f.polygon, "content":f'![]({formula_name})', "type":"formula"})
+                    formulas.append({"polygon":f.polygon, "content":f'![](https://datascienceteampocra7fd.blob.core.windows.net/tsc-formulas-store/{formula_name})', "type":"formula"})
 
                 for formula in formulas:
                     sorted_array = insert_in_reading_order(words, formula)
