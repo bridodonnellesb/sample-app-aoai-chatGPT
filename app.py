@@ -1556,28 +1556,30 @@ async def get_formula():
                     page_source = match.group(3)
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
                     error = formula_name
-                    current_poly = f.polygon
+                    formulas.append({"polygon":f.polygon, "name":formula_name, "content":f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{formula_name})', "type":"formula"})
+
+                for i, formula in enumerate(formulas):
+                    current_poly = formula["polygon"]
                     polygons.append(current_poly)
                     error = str(polygons)
-                    if (i<len(result.pages[0].formulas)-1):
-                        next_poly = result.pages[0].formulas[formula_id+1]["polygon"]
+                    if (i<len(formulas)-1):
+                        next_poly = formulas[i+1]["polygon"]
                         error = "next_poly"
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             error = "get length"
                             continue
                         else:
-                            screenshot_formula(url, formula_name, get_combined_polygon(polygons))
+                            screenshot_formula(url, formula["name"], get_combined_polygon(polygons))
                             error = "first_screenshot"
                             polygons = []
                     else:
-                        screenshot_formula(url, formula_name, get_combined_polygon(polygons))
+                        screenshot_formula(url, formula["name"], get_combined_polygon(polygons))
                         error = "screenshot_formula"
-                    formulas.append({"polygon":f.polygon, "content":f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{formula_name})', "type":"formula"})
 
                 error="screenshots saved"
                 for i, formula in enumerate(formulas):
                     sorted_array = insert_in_reading_order(words, formula)
-                
+
                 offsets = []
                 formulas = []
                 characters = 0
