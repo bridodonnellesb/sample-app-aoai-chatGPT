@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import httpx
 import requests
 import base64
+from collections import namedtuple
 from quart import (
     Blueprint,
     Quart,
@@ -67,7 +68,7 @@ DOCUMENT_INTELLIGENCE_KEY = os.environ.get("DOCUMENT_INTELLIGENCE_KEY")
 # Blob Storage
 BLOB_CREDENTIAL = os.environ.get("BLOB_CREDENTIAL")
 BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
-
+BLOB_CONTAINER = os.environ.get("BLOB_CONTAINER")
 
 def create_app():
     app = Quart(__name__)
@@ -1467,20 +1468,17 @@ def screenshot_formula(image_bytes, formula_filepath, points):
     image_stream = BytesIO()
     cropped_image.save(image_stream, format='JPEG') 
     image_stream.seek(0) 
-    blob_client = blob_service_client.get_blob_client(container="tsc-formulas-store", blob=formula_filepath)
+    blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
     blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
 
-# Define a function to get the top-left point of the bounding box
 def get_top_left(polygon):
     min_x = min(point.x for point in polygon)
     min_y = min(point.y for point in polygon)
     return min_x, min_y
  
-# Define a function to compare the reading order of two polygons
-def compare_reading_order(polygon1, polygon2) -> bool:
+def compare_reading_order(polygon1, polygon2):
     point1_x, point1_y = get_top_left(polygon1)
     point2_x, point2_y = get_top_left(polygon2)
-    # Compare by y-coordinate first, then by x-coordinate
     if point1_y < point2_y:
         return True
     elif point1_y == point2_y and point1_x < point2_x:
@@ -1488,17 +1486,40 @@ def compare_reading_order(polygon1, polygon2) -> bool:
     else:
         return False
  
-# Define a function to insert a new object into the array based on the reading order
 def insert_in_reading_order(array, formula):
     new_polygon = formula['polygon']
     insert_index = 0
-    # Find the correct position to insert the new object
     for i, item in enumerate(array):
         if compare_reading_order(item['polygon'],new_polygon):
             insert_index = i + 1
-    # Insert the new object into the array
     array.insert(insert_index, formula)
     return array
+
+Point=namedtuple('Point',['x','y'])
+
+def get_x_length(polygon):
+    x_coords = [point[0] for point in polygon]
+    min_x = min(x_coords)
+    max_x = max(x_coords)
+    length = max_x - min_x
+    return length
+ 
+def get_vertical_distance(top, bottom):
+    y_coords_top = [point[1] for point in top]
+    y_coords_bottom = [point[1] for point in bottom]
+    max_y = max(y_coords_top)
+    min_y = min(y_coords_bottom)
+    distance = max_y - min_y
+    return distance
+ 
+def get_combined_polygon(polygons):
+    x_coords = [point.x for poly in polygons for point in poly]
+    y_coords = [point.y for poly in polygons for point in poly]
+    top_left = Point(min(x_coords), min(y_coords))
+    top_right = Point(max(x_coords), min(y_coords))
+    bottom_right = Point(max(x_coords), max(y_coords))
+    bottom_left = Point(min(x_coords), max(y_coords))
+    return [top_left, top_right, bottom_right, bottom_left]
 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
@@ -1526,19 +1547,30 @@ async def get_formula():
                 error = "begin_analyze_document"
                 words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
                 formulas = []
+                polygons = []
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
-                    pattern = r'https://datascienceteampocra7fd.blob.core.windows.net/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
                     match = re.search(pattern, url)
                     file_source = match.group(2)
                     page_source = match.group(3)
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
                     error = "binary search"
-                    screenshot_formula(image_bytes,formula_name,f.polygon)
+                    current_poly = f.polygon
+                    polygons.append(current_poly)
+                    if (i<len(formulas)-1):
+                        next_poly = result.pages[0].formulas[formula_id+1]["polygon"]
+                        if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
+                            continue
+                        else:
+                            screenshot_formula(url, formula_name, get_combined_polygon(polygons))
+                            polygons = []
+                    else:
+                        screenshot_formula(url, formula_name, get_combined_polygon(polygons))
                     error = "screenshot_formula"
-                    formulas.append({"polygon":f.polygon, "content":f'![](https://datascienceteampocra7fd.blob.core.windows.net/tsc-formulas-store/{formula_name})', "type":"formula"})
+                    formulas.append({"polygon":f.polygon, "content":f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{formula_name})', "type":"formula"})
 
-                for formula in formulas:
+                for i, formula in enumerate(formulas):
                     sorted_array = insert_in_reading_order(words, formula)
 
                 offsets = []
