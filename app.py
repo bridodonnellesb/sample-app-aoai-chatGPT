@@ -1558,7 +1558,7 @@ async def get_formula():
                     error = "binary search"
                     current_poly = f.polygon
                     polygons.append(current_poly)
-                    if (i<len(formulas)-1):
+                    if (i<len(result.pages[0].formulas)-1):
                         next_poly = result.pages[0].formulas[formula_id+1]["polygon"]
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             continue
