@@ -1564,7 +1564,7 @@ async def get_formula():
 
                 display_formulas = []
                 for i, formula in enumerate(formulas):
-                    if get_x_length(formula["polygon"])>10:
+                    if get_x_length(formula["polygon"])>30:
                         display_formulas.append(formula)
 
                 filtered_formulas = []
