@@ -1464,6 +1464,9 @@ def screenshot_formula(image_bytes, formula_filepath, points):
     image = Image.open(BytesIO(image_bytes))
     x1, y1 = points[0].x, points[0].y
     x2, y2 = points[2].x, points[2].y
+    x1-= 3
+    x2+= 5
+    y2+= 3
     cropped_image = image.crop((x1, y1, x2, y2)) 
     image_stream = BytesIO()
     cropped_image.save(image_stream, format='JPEG') 
@@ -1558,14 +1561,19 @@ async def get_formula():
                     error = formula_name
                     formulas.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
+                display_formulas = []
+                for i, formula in enumerate(formulas):
+                    if get_x_length(formula["polygon"])>10:
+                        display_formulas.append(formula)
+
                 filtered_formulas = []
 
-                for i, formula in enumerate(formulas):
+                for i, formula in enumerate(display_formulas):
                     current_poly = formula["polygon"]
                     polygons.append(current_poly)
                     error = str(polygons)
-                    if (i<len(formulas)-1):
-                        next_poly = formulas[i+1]["polygon"]
+                    if (i<len(display_formulas)-1):
+                        next_poly = display_formulas[i+1]["polygon"]
                         error = formula["content"]
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             error = "get length"
