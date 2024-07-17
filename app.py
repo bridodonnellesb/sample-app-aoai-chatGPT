@@ -1471,8 +1471,9 @@ def screenshot_formula(image_bytes, formula_filepath, points):
     image_stream = BytesIO()
     cropped_image.save(image_stream, format='JPEG') 
     image_stream.seek(0) 
+    content_settings = ContentSettings(content_type="image/jpeg")
     blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
-    blob_client.upload_blob(image_stream.getvalue(), blob_type="BlockBlob")
+    blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob")
 
 def get_top_left(polygon):
     min_x = min(point.x for point in polygon)
