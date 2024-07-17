@@ -1556,7 +1556,7 @@ async def get_formula():
                     page_source = match.group(3)
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
                     error = formula_name
-                    formulas.append({"polygon":f.polygon, "name":formula_name, "content":f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{formula_name})', "type":"formula"})
+                    formulas.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
                 for i, formula in enumerate(formulas):
                     current_poly = formula["polygon"]
@@ -1564,16 +1564,16 @@ async def get_formula():
                     error = str(polygons)
                     if (i<len(formulas)-1):
                         next_poly = formulas[i+1]["polygon"]
-                        error = "next_poly"
+                        error = formula["content"]
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             error = "get length"
                             continue
                         else:
-                            screenshot_formula(url, formula["name"], get_combined_polygon(polygons))
+                            screenshot_formula(image_bytes, formula["content"], get_combined_polygon(polygons))
                             error = "first_screenshot"
                             polygons = []
                     else:
-                        screenshot_formula(url, formula["name"], get_combined_polygon(polygons))
+                        screenshot_formula(image_bytes, formula["content"], get_combined_polygon(polygons))
                         error = "screenshot_formula"
 
                 error="screenshots saved"
@@ -1586,7 +1586,7 @@ async def get_formula():
                 for obj in sorted_array:
                     if obj["type"]=="formula":
                         offsets.append(characters)
-                        formulas.append(obj["content"])
+                        formulas.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                     else:
                         characters += (len(obj["content"])+1)
 
