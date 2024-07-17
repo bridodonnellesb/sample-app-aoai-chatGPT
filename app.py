@@ -1558,6 +1558,8 @@ async def get_formula():
                     error = formula_name
                     formulas.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
+                filtered_formulas = []
+
                 for i, formula in enumerate(formulas):
                     current_poly = formula["polygon"]
                     polygons.append(current_poly)
@@ -1569,31 +1571,33 @@ async def get_formula():
                             error = "get length"
                             continue
                         else:
+                            filtered_formulas.append(formula)
                             screenshot_formula(image_bytes, formula["content"], get_combined_polygon(polygons))
                             error = "first_screenshot"
                             polygons = []
                     else:
+                        filtered_formulas.append(formula)
                         screenshot_formula(image_bytes, formula["content"], get_combined_polygon(polygons))
                         error = "screenshot_formula"
 
                 error="screenshots saved"
-                for i, formula in enumerate(formulas):
+                for i, formula in enumerate(filtered_formulas):
                     sorted_array = insert_in_reading_order(words, formula)
 
                 offsets = []
-                formulas = []
+                formulas_output = []
                 characters = 0
                 for obj in sorted_array:
                     if obj["type"]=="formula":
                         offsets.append(characters)
-                        formulas.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                     else:
                         characters += (len(obj["content"])+1)
 
                 output={
                     "recordId": id,
                     "data": {
-                        "formula": formulas,
+                        "formula": formulas_output,
                         "offset": offsets
                     },
                     "errors": None,
