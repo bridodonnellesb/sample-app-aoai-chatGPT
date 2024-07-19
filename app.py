@@ -37,7 +37,6 @@ from backend.utils import (
     format_as_ndjson,
     format_stream_response,
     generateFilterString,
-    remove_SAS_token,
     parse_multi_columns,
     format_non_streaming_response,
     convert_to_pf_format,
@@ -1032,10 +1031,6 @@ async def update_conversation():
         if len(messages) > 0 and messages[-1]["role"] == "assistant":
             if len(messages) > 1 and messages[-2].get("role", None) == "tool":
                 # write the tool message first
-                content = json.loads(messages[-2].get("content", None))
-                for i, chunk in enumerate(content["citations"]):
-                    content["citations"][i]["url"]=remove_SAS_token(chunk["url"])
-                messages[-2]["content"] = json.dumps(content)
                 await cosmos_conversation_client.create_message(
                     uuid=str(uuid.uuid4()),
                     conversation_id=conversation_id,
