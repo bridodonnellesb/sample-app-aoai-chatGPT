@@ -185,7 +185,7 @@ class CosmosConversationClient():
             if item["role"]=="tool":
                 content = json.loads(item["content"])
                 for i, chunk in enumerate(content["citations"]):
-                    content["citations"][i]["url"]=chunk["url"]+"?"+generate_SAS(chunk["url"])
+                    content["citations"][i]["url"]=chunk["url"]+"?"#+generate_SAS(chunk["url"])
                 item["content"] = json.dumps(content)
             messages.append(item)
 
