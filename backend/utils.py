@@ -78,6 +78,11 @@ def generateFilterString(userToken):
     group_ids = ", ".join([obj["id"] for obj in userGroups])
     return f"{AZURE_SEARCH_PERMITTED_GROUPS_COLUMN}/any(g:search.in(g, '{group_ids}'))"
 
+def remove_SAS_token(url):
+    parsed_url = urlparse(url)
+    url_without_query = parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path
+    return url_without_query
+
 def generate_SAS(url):
     container, blob = split_url(url)
     blob_service_client =BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
