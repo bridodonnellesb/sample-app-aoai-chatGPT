@@ -5,6 +5,7 @@ import requests
 import dataclasses
 from datetime import datetime, timedelta
 import re
+from urllib.parse import unquote
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 
 DEBUG = os.environ.get("DEBUG", "false")
@@ -95,14 +96,15 @@ def generate_SAS(url):
 
     return sas_token
 
-#### GO OVER THIS IN RELATION TO TROUBLESHOOT - its specifically the GROUP PART BEING NULL
 def split_url(url):
-    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+\.\w+)'
-    match = re.search(pattern, url)
+    url_decoded = unquote(url)
+    if url_decoded.endswith('/'):
+        url_decoded = url_decoded[:-1]
+    pattern = fr"{account_url}/([^/]+)/(.+)"
+    match = re.search(pattern, url_decoded)
     container = match.group(1)
     blob = match.group(2)
     return container, blob
-#### THIS IS THE PROBLEM CODE FOR AT LEAST INITIAL SAS GENERATION
 
 def format_non_streaming_response(chatCompletion, history_metadata, apim_request_id):
     response_obj = {
@@ -120,8 +122,8 @@ def format_non_streaming_response(chatCompletion, history_metadata, apim_request
         if message:
             if hasattr(message, "context"):
                 content = message.context
-                # for i, chunk in enumerate(content["citations"]):
-                #     content["citations"][i]["url"]=chunk["url"]+"?"+generate_SAS(chunk["url"])
+                for i, chunk in enumerate(content["citations"]):
+                    content["citations"][i]["url"]=chunk["url"]+"?"+generate_SAS(chunk["url"])
                 response_obj["choices"][0]["messages"].append(
                     {
                         "role": "tool",
@@ -154,8 +156,8 @@ def format_stream_response(chatCompletionChunk, history_metadata, apim_request_i
         if delta:
             if hasattr(delta, "context"):
                 content = delta.context
-                # for i, chunk in enumerate(content["citations"]):
-                #     content["citations"][i]["url"]=chunk["url"]+"?"+generate_SAS(chunk["url"])
+                for i, chunk in enumerate(content["citations"]):
+                    content["citations"][i]["url"]=chunk["url"]+"?"+generate_SAS(chunk["url"])
                 messageObj = {"role": "tool", "content": json.dumps(content)}
                 response_obj["choices"][0]["messages"].append(messageObj)
                 return response_obj
