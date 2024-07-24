@@ -5,7 +5,7 @@ import requests
 import dataclasses
 from datetime import datetime, timedelta
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 
 DEBUG = os.environ.get("DEBUG", "false")
