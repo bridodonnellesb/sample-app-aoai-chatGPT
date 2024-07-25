@@ -1561,7 +1561,7 @@ async def get_formula():
                 for formula_id, f in enumerate(result.pages[0].formulas):
                     error = f"id - {formula_id} .... initial f - {str(f)}"
                     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                    error = f"id - {formula_id} .... pattern - {pattern}"
+                    error = f"id - {formula_id} .... url - {url}"
                     match = re.search(pattern, url)
                     file_source = match.group(2)
                     error = f"id - {formula_id} .... file source {file_source}"
