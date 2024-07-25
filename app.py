@@ -1420,7 +1420,7 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]["content"]
 
-@bp.route("/skillset/page", methods=["POST"])
+@bp.route("/skillset/page", methods=["POST"]) 
 async def add_page():
     try:
         request_json = await request.get_json()
