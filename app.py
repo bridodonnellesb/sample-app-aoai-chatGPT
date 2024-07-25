@@ -1585,7 +1585,7 @@ async def get_formula():
                     
                     if (i<len(display_formulas)-1):
                         next_poly = display_formulas[i+1]["polygon"]
-                        error = f"if statement - {formula["content"]} and length - {get_x_length(current_poly)}"
+                        error = f"if statement - {formusla} and length - {get_x_length(current_poly)}"
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             error = "get length"
                             continue
