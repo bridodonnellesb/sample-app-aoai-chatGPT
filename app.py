@@ -1544,9 +1544,9 @@ async def get_formula():
         )
         error = "intelligence connection"
         for item in values:
-            for image in item["data"]["image"]:
-                url = image["url"]
-                image = image["data"]
+            for data in item["data"]["image"]:
+                url = data["url"]
+                image = data["data"]
                 image_bytes = base64.b64decode(image)
                 error = url
                 poller = document_analysis_client.begin_analyze_document(
@@ -1561,7 +1561,7 @@ async def get_formula():
                 for formula_id, f in enumerate(result.pages[0].formulas):
                     error = f"id - {formula_id} .... initial f - {str(f)}"
                     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                    error = f"id - {formula_id} .... url - {url}"
+                    error = f"id - {formula_id} .... url - {str(data.keys())}"
                     match = re.search(pattern, url)
                     file_source = match.group(2)
                     error = f"id - {formula_id} .... file source {file_source}"
