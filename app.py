@@ -1585,12 +1585,15 @@ async def get_formula():
                     
                     if (i<len(display_formulas)-1):
                         next_poly = display_formulas[i+1]["polygon"]
-                        error = f"if statement - {formula} and length - {get_x_length(current_poly)}"
+                        error = f"if statement - {formula}"
+                        error = f"if statement - {formula} and length - {get_vertical_distance(current_poly,next_poly)<10}"
                         if (get_x_length(current_poly)>50)and(get_x_length(next_poly)>50)and(get_vertical_distance(current_poly,next_poly)<10):
                             error = "get length"
                             continue
                         else:
+                            error = "else"
                             combined_polygon = get_combined_polygon(polygons)
+                            error = f"combined_polygon {combined_polygon}"
                             formula["polygon"] = combined_polygon
                             filtered_formulas.append(formula)
                             screenshot_formula(image_bytes, formula["content"], combined_polygon)
