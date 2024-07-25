@@ -1559,12 +1559,16 @@ async def get_formula():
                 polygons = []
 
                 for formula_id, f in enumerate(result.pages[0].formulas):
+                    error = f"id - {formula_id} .... initial f - {str(f)}"
                     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                    error = f"id - {formula_id} .... pattern - {pattern}"
                     match = re.search(pattern, url)
                     file_source = match.group(2)
+                    error = f"id - {formula_id} .... file source {file_source}"
                     page_source = match.group(3)
+                    error = f"id - {formula_id} .... page source {page_source}"
                     formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
-                    error = formula_name
+                    error = f"id - {formula_id} .... formula name {formula_name}"
                     formulas.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
 
                 display_formulas = []
