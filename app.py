@@ -1599,8 +1599,9 @@ async def get_formula():
                         screenshot_formula(image_bytes, formula["content"], combined_polygon)
                         error = "screenshot_formula"
 
-                error="screenshots saved"
+                error=f"number of formulas screenshots saved - {filtered_formulas}"
                 for i, formula in enumerate(filtered_formulas):
+                    error = str(formula)
                     sorted_array = insert_in_reading_order(words, formula)
 
                 offsets = []
