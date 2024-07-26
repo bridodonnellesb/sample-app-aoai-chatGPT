@@ -1538,12 +1538,12 @@ async def get_formula():
         error = "values"
         array = []
         id = 0
-        previousPagesCharacterTotal = 0
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
         error = "intelligence connection"
         for item in values:
+            previousPagesCharacterTotal = 0
             offsets = []
             formulas_output = []
             for data in item["data"]["image"]:
@@ -1566,7 +1566,7 @@ async def get_formula():
 
                 display_formulas = []
                 for i, formula in enumerate(formulas):
-                    if get_x_length(formula["polygon"])>20:
+                    if get_x_length(formula["polygon"])>50:
                         display_formulas.append(formula)
 
                 filtered_formulas = []
