@@ -1538,12 +1538,14 @@ async def get_formula():
         error = "values"
         array = []
         id = 0
-        
+        previousPagesCharacterTotal = 0
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
         error = "intelligence connection"
         for item in values:
+            offsets = []
+            formulas_output = []
             for data in item["data"]["image"]:
                 url = data["url"]
                 image = data["data"]
@@ -1555,33 +1557,25 @@ async def get_formula():
                 result = poller.result()
                 error = "begin_analyze_document"
                 words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
-                formulas = []
-                polygons = []
-
-                for formula_id, f in enumerate(result.pages[0].formulas):
-                    error = f"id - {formula_id} .... initial f - {str(f)}"
-                    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                    error = f"id - {formula_id} .... url - {str(data)}"
-                    match = re.search(pattern, url)
-                    file_source = match.group(2)
-                    error = f"id - {formula_id} .... file source {file_source}"
-                    page_source = match.group(3)
-                    error = f"id - {formula_id} .... page source {page_source}"
-                    formula_name = f"formula_{file_source}_{page_source}_{formula_id}.jpg"
-                    error = f"id - {formula_id} .... formula name {formula_name}"
-                    formulas.append({"polygon":f.polygon, "content":formula_name, "type":"formula"})
+                
+                pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                match = re.search(pattern, url)
+                file_source = match.group(2)
+                page_source = match.group(3)
+                formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
 
                 display_formulas = []
                 for i, formula in enumerate(formulas):
-                    if get_x_length(formula["polygon"])>30:
+                    if get_x_length(formula["polygon"])>20:
                         display_formulas.append(formula)
 
                 filtered_formulas = []
+                polygons = []
 
                 for i, formula in enumerate(display_formulas):
                     current_poly = formula["polygon"]
                     polygons.append(current_poly)
-                    error = str(polygons)
+                    error = f"polygon check:{str(polygons)}"
                     
                     if (i<len(display_formulas)-1):
                         next_poly = display_formulas[i+1]["polygon"]
@@ -1613,28 +1607,27 @@ async def get_formula():
                         sorted_array = insert_in_reading_order(words, formula)
                 else:
                     sorted_array = words
-
-                offsets = []
-                formulas_output = []
-                characters = 0
+                
+                totalPageCharacters = 0
                 for obj in sorted_array:
                     if obj["type"]=="formula":
-                        offsets.append(characters)
+                        offsets.append(previousPagesCharacterTotal+totalPageCharacters)
                         formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                     else:
-                        characters += (len(obj["content"])+1)
+                        totalPageCharacters += (len(obj["content"])+1)
+                previousPagesCharacterTotal += totalPageCharacters
 
-                output={
-                    "recordId": id,
-                    "data": {
-                        "formula": formulas_output,
-                        "offset": offsets
-                    },
-                    "errors": None,
-                    "warnings": None
-                }
-                id+=1
-                array.append(output)
+            output={
+                "recordId": id,
+                "data": {
+                    "formula": formulas_output,
+                    "offset": offsets
+                },
+                "errors": None,
+                "warnings": None
+            }
+            id+=1
+            array.append(output)
         response = jsonify({"values":array})
         return response, 200  # Status code should be 200 for success
 
