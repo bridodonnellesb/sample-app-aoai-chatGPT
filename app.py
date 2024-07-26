@@ -1592,9 +1592,10 @@ async def get_formula():
                         else:
                             error = "else"
                             combined_polygon = get_combined_polygon(polygons)
-                            error = f"combined_polygon {formula}"
+                            error = f"combined_polygon {combined_polygon}"
                             formula["polygon"] = combined_polygon
                             filtered_formulas.append(formula)
+                            error = f"filtered_formulas {formula}"
                             screenshot_formula(image_bytes, formula["content"], combined_polygon)
                             error = "first_screenshot"
                             polygons = []
