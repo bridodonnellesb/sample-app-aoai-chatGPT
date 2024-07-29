@@ -1559,67 +1559,68 @@ async def get_formula():
                     "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
                 )
                 result = poller.result()
-                error = "begin_analyze_document"
-                words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
-                
-                pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                match = re.search(pattern, url)
-                file_source = match.group(2)
-                page_source = match.group(3)
-                formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
-
-                display_formulas = []
-                for i, formula in enumerate(formulas):
-                    if get_x_length(formula["polygon"])>50:
-                        display_formulas.append(formula)
-
-                filtered_formulas = []
-                polygons = []
-
-                for i, formula in enumerate(display_formulas):
-                    current_poly = formula["polygon"]
-                    polygons.append(current_poly)
-                    error = f"polygon check:{str(polygons)}"
+                if len(result.pages[0].formulas)>0:
+                    error = "begin_analyze_document"
+                    words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
                     
-                    if (i<len(display_formulas)-1):
-                        next_poly = display_formulas[i+1]["polygon"]
-                        error = f"if statement - {formula}"
-                        if get_vertical_distance(current_poly,next_poly)<20:
-                            error = "get length"
-                            continue
+                    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+                    match = re.search(pattern, url)
+                    file_source = match.group(2)
+                    page_source = match.group(3)
+                    formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
+
+                    display_formulas = []
+                    for i, formula in enumerate(formulas):
+                        if get_x_length(formula["polygon"])>50:
+                            display_formulas.append(formula)
+
+                    filtered_formulas = []
+                    polygons = []
+
+                    for i, formula in enumerate(display_formulas):
+                        current_poly = formula["polygon"]
+                        polygons.append(current_poly)
+                        error = f"polygon check:{str(polygons)}"
+                        
+                        if (i<len(display_formulas)-1):
+                            next_poly = display_formulas[i+1]["polygon"]
+                            error = f"if statement - {formula}"
+                            if get_vertical_distance(current_poly,next_poly)<20:
+                                error = "get length"
+                                continue
+                            else:
+                                error = "else"
+                                combined_polygon = get_combined_polygon(polygons)
+                                error = f"combined_polygon {combined_polygon}"
+                                formula["polygon"] = combined_polygon
+                                filtered_formulas.append(formula)
+                                error = f"filtered_formulas {formula}"
+                                screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                                error = "first_screenshot"
+                                polygons = []
                         else:
-                            error = "else"
                             combined_polygon = get_combined_polygon(polygons)
-                            error = f"combined_polygon {combined_polygon}"
                             formula["polygon"] = combined_polygon
                             filtered_formulas.append(formula)
-                            error = f"filtered_formulas {formula}"
                             screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                            error = "first_screenshot"
-                            polygons = []
-                    else:
-                        combined_polygon = get_combined_polygon(polygons)
-                        formula["polygon"] = combined_polygon
-                        filtered_formulas.append(formula)
-                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                        error = "screenshot_formula"
+                            error = "screenshot_formula"
 
-                error=f"number of formulas screenshots saved - {filtered_formulas}"
-                if len(filtered_formulas)>0:
-                    for i, formula in enumerate(filtered_formulas):
-                        error = str(formula)
-                        sorted_array = insert_in_reading_order(words, formula)
-                else:
-                    sorted_array = words
-                
-                totalPageCharacters = 0
-                for obj in sorted_array:
-                    if obj["type"]=="formula":
-                        offsets.append(previousPagesCharacterTotal+totalPageCharacters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                    error=f"number of formulas screenshots saved - {filtered_formulas}"
+                    if len(filtered_formulas)>0:
+                        for i, formula in enumerate(filtered_formulas):
+                            error = str(formula)
+                            sorted_array = insert_in_reading_order(words, formula)
                     else:
-                        totalPageCharacters += (len(obj["content"])+1)
-                previousPagesCharacterTotal += totalPageCharacters
+                        sorted_array = words
+                    
+                    totalPageCharacters = 0
+                    for obj in sorted_array:
+                        if obj["type"]=="formula":
+                            offsets.append(previousPagesCharacterTotal+totalPageCharacters)
+                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        else:
+                            totalPageCharacters += (len(obj["content"])+1)
+                    previousPagesCharacterTotal += totalPageCharacters
 
             output={
                 "recordId": id,
