@@ -1441,10 +1441,14 @@ async def add_page():
 
             pageNumbers = []
             total_offset = 0
-            for text in pages:
-                midpoint_offset = total_offset + (len(text) - 500) // 2  # Calculate the midpoint for the current page
+            for i, text in enumerate(pages):
+                if i == 0:
+                    midpoint_offset = total_offset + (len(text)) // 2  # Calculate the midpoint for the current page
+                    total_offset += len(text)
+                else:
+                    midpoint_offset = total_offset + (len(text) - 500) // 2  # Calculate the midpoint for the current page
+                    total_offset += len(text) - 500
                 pageNumbers.append(getPage(midpoint_offset, page_list))  # Use the midpoint to get the page number
-                total_offset += len(text) - 500
 
             output={
                 "recordId": id,
@@ -1634,7 +1638,7 @@ async def get_formula():
     except Exception as e:
         logging.exception("Exception in /skillset/formula")
         exception = str(e)
-        return jsonify({"error":error}), 500
+        return jsonify({"error":exception}), 500
 
 
 app = create_app()
