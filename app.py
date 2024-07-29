@@ -1559,9 +1559,9 @@ async def get_formula():
                     "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
                 )
                 result = poller.result()
+                words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
                 if len(result.pages[0].formulas)>0:
                     error = "begin_analyze_document"
-                    words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
                     
                     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
                     match = re.search(pattern, url)
@@ -1620,6 +1620,10 @@ async def get_formula():
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                         else:
                             totalPageCharacters += (len(obj["content"])+1)
+                    previousPagesCharacterTotal += totalPageCharacters
+                else:
+                    for obj in words:
+                        totalPageCharacters += (len(obj["content"])+1)
                     previousPagesCharacterTotal += totalPageCharacters
 
             output={
