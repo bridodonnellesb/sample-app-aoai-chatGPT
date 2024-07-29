@@ -1560,6 +1560,7 @@ async def get_formula():
                 )
                 result = poller.result()
                 words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
+                totalPageCharacters = 0
                 if len(result.pages[0].formulas)>0:
                     error = "begin_analyze_document"
                     
@@ -1613,7 +1614,6 @@ async def get_formula():
                     else:
                         sorted_array = words
                     
-                    totalPageCharacters = 0
                     for obj in sorted_array:
                         if obj["type"]=="formula":
                             offsets.append(previousPagesCharacterTotal+totalPageCharacters)
