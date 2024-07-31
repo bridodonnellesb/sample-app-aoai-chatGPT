@@ -75,11 +75,11 @@ export const appStateReducer = (state: AppState, action: Action): AppState => {
                     [action.payload.answerId]: action.payload.feedback,
                 },
             };    
-        case 'UPDATE_SELECTED_OPTIONS':
-            return {
-                ...state,
-                selectedOptions: action.payload,
-            };
+        // case 'UPDATE_SELECTED_OPTIONS':
+        //     return {
+        //         ...state,
+        //         selectedOptions: action.payload,
+        //     };
         default:
             return state;
       }

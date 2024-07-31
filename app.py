@@ -761,14 +761,15 @@ def prepare_model_args(request_body):
         if message:
             messages.append({"role": message["role"], "content": message["content"]})
     
-    filter_array = request_messages[-1]["filter"]
-    filter_array.sort()
-    filter_array = create_combination_strings(filter_array)
+    # filter_array = request_messages[-1]["filter"]
+    # filter_array.sort()
+    # filter_array = create_combination_strings(filter_array)
 
-    if len(filter_array)>0:
-        filter_string = ' or '.join(f"(system eq '{item}')" for item in filter_array)
-    else:
-        filter_string=""
+    # if len(filter_array)>0:
+    #     filter_string = ' or '.join(f"(system eq '{item}')" for item in filter_array)
+    # else:
+    #     filter_string=""
+    filter_string=""
 
     model_args = {
         "messages": messages,

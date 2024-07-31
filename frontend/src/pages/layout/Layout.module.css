@@ -105,6 +105,11 @@
         margin-left: 4px;
     }
 
+    .headerTitle{
+        font-size: 18px;
+        line-height: 20px;
+    }
+
     .headerIcon {
         margin-left: 26px;
     }

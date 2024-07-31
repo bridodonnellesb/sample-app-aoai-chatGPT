@@ -64,34 +64,34 @@ const Layout = () => {
         return () => window.removeEventListener('resize', handleResize);
       }, []);
 
-    const dropdownOptions = [
-        { key: 'CRM7', text: 'CRM7' },
-        { key: 'SRP', text: 'SRP' },
-        { key: 'IRP', text: 'IRP' }
-    ];
+    // const dropdownOptions = [
+    //     { key: 'CRM7', text: 'CRM7' },
+    //     { key: 'SRP', text: 'SRP' },
+    //     { key: 'IRP', text: 'IRP' }
+    // ];
 
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+    // const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
-    const onDropdownChange = (
-        event: React.FormEvent<HTMLDivElement>,
-        option?: IDropdownOption, // option is now optional and matches IDropdownOption type
-        index?: number // index is optional and of type number
-    ): void => {
-        if (option) {
-            const newSelectedKeys = option.selected
-                ? [...selectedKeys, option.key as string]
-                : selectedKeys.filter(key => key !== option.key);
+    // const onDropdownChange = (
+    //     event: React.FormEvent<HTMLDivElement>,
+    //     option?: IDropdownOption, // option is now optional and matches IDropdownOption type
+    //     index?: number // index is optional and of type number
+    // ): void => {
+    //     if (option) {
+    //         const newSelectedKeys = option.selected
+    //             ? [...selectedKeys, option.key as string]
+    //             : selectedKeys.filter(key => key !== option.key);
 
-            // Update the local state
-            setSelectedKeys(newSelectedKeys);
+    //         // Update the local state
+    //         setSelectedKeys(newSelectedKeys);
 
-            // Dispatch the action to update the AppStateContext
-            appStateContext?.dispatch({
-                type: 'UPDATE_SELECTED_OPTIONS',
-                payload: newSelectedKeys,
-            });
-        }
-    };
+    //         // Dispatch the action to update the AppStateContext
+    //         appStateContext?.dispatch({
+    //             type: 'UPDATE_SELECTED_OPTIONS',
+    //             payload: newSelectedKeys,
+    //         });
+    //     }
+    // };
 
     return (
         <div className={styles.layout}>
@@ -108,14 +108,14 @@ const Layout = () => {
                         </Link>
                     </Stack>
                     <Stack horizontal tokens={{ childrenGap: 10 }} className={styles.shareButtonContainer}>
-                        <Dropdown
+                        {/* <Dropdown
                             placeholder="Select system to filter by"
                             multiSelect
                             options={dropdownOptions}
                             selectedKeys={selectedKeys}
                             onChange={onDropdownChange}
                             styles={{ dropdown: { width: 250 } }} // Adjust width as needed
-                        />
+                        /> */}
                         {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) &&
                             <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel} />
                         }

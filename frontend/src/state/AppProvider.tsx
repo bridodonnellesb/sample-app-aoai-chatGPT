@@ -28,8 +28,8 @@ export type Action =
     | { type: 'FETCH_CHAT_HISTORY', payload: Conversation[] | null }  // API Call
     | { type: 'FETCH_FRONTEND_SETTINGS', payload: FrontendSettings | null }  // API Call
     | { type: 'SET_FEEDBACK_STATE'; payload: { answerId: string; feedback: Feedback.Positive | Feedback.Negative | Feedback.Neutral } }
-    | { type: 'GET_FEEDBACK_STATE'; payload: string }
-    | { type: 'UPDATE_SELECTED_OPTIONS', payload: string[] };
+    | { type: 'GET_FEEDBACK_STATE'; payload: string };
+    // | { type: 'UPDATE_SELECTED_OPTIONS', payload: string[] };
 
 
 const initialState: AppState = {
