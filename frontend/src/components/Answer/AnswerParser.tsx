@@ -37,6 +37,7 @@ export function parseAnswer(answer: AskResponse): ParsedAnswer {
           answerText = answerText.replaceAll(link, ` ^${++citationReindex}^ `);
           let content = citation.content.split("\n")
           citation.content = content[0]
+          console.log("content "+content)
           let pages = content[-1].replace("[","").replace("[","").split(",")
           citation.id = citationIndex; // original doc index to de-dupe
           citation.reindex_id = citationReindex.toString(); // reindex from 1 for display
