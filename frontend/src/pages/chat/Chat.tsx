@@ -526,7 +526,7 @@ const Chat = () => {
         setIsCitationPanelOpen(false);
         setActiveCitation(undefined);
         appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: null });
-        setProcessMessages(messageStatus.Done)
+        setProcessMessages(messageStatus.NotRunning)
     };
 
     const stopGenerating = () => {
