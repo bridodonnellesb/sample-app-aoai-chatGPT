@@ -1542,107 +1542,107 @@ def get_combined_polygon(polygons):
     bottom_left = Point(min(x_coords), max(y_coords))
     return [top_left, top_right, bottom_right, bottom_left]
 
+def generate_filename(url, id):    
+    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+    match = re.search(pattern, url)
+    file_source = match.group(2)
+    page_source = match.group(3)
+    return f"formula_{file_source}_{page_source}_{id}.jpg"
+
+def get_relevant_formula(url, result, width):
+    if not result.pages[0].formulas:
+        return []
+    return [
+        {
+            "polygon":f.polygon, 
+            "content":generate_filename(url, formula_id), 
+            "type":"formula"
+        } 
+        for formula_id, f in enumerate(result.pages[0].formulas) 
+        # Filter formulas that have a significant width
+        if get_x_length(f.polygon) > width
+    ]
+
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
     try:
         request_json = await request.get_json()
-        # if not request_json or "values" not in request_json:
-        #     raise ValueError("Invalid request payload")
-        values = request_json.get("values", None) # For one document
-        print(str(values))
-        error = str(values)
-        array = values
-        # id = 0
-        # document_analysis_client = DocumentAnalysisClient(
-        #     endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-        # )
-        # previousPagesCharacterTotal = 0
-        # for item in values: # item = per page
-        #     url = item["data"]["image"]["url"]
-        #     image = item["data"]["image"]["data"]
-        #     image_bytes = base64.b64decode(image)
-        #     poller = document_analysis_client.begin_analyze_document(
-        #         "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
-        #     )
-        #     result = poller.result()
-        #     if result.pages and result.pages[0].words:
-        #         words = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-        #         totalPageCharacters = 0
-        #         if len(result.pages[0].formulas)>0:
-        #             pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-        #             match = re.search(pattern, url)
-        #             file_source = match.group(2)
-        #             page_source = match.group(3)
-        #             formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
+        if not request_json or "values" not in request_json:
+            raise ValueError("Invalid request payload")
+        values = request_json.get("values", None)
+        array = []
+        document_analysis_client = DocumentAnalysisClient(
+            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+        )
+        for item in values: # going through the documents
+            formulas_output =[]
+            offsets=[]
+            total_document_characters = 0
+            for data in item["data"]["image"]: # going through each page of the document
+                total_page_characters = 0
+                url = data["url"]
+                image = item["data"]
+                image_bytes = base64.b64decode(image)
+                poller = document_analysis_client.begin_analyze_document(
+                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
+                )
+                result = poller.result()
+                if len(result.pages[0].words)>0:
+                    words = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                    formulas = get_relevant_formula(url, result, 50)
 
-        #             display_formulas = []
-        #             for i, formula in enumerate(formulas):
-        #                 if get_x_length(formula["polygon"])>50:
-        #                     display_formulas.append(formula)
+                    combined_formulas = []
+                    polygons = []
 
-        #             filtered_formulas = []
-        #             polygons = []
+                    for i, formula in enumerate(formulas):
+                        current_poly = formula["polygon"]
+                        polygons.append(current_poly)
 
-        #             for i, formula in enumerate(display_formulas):
-        #                 current_poly = formula["polygon"]
-        #                 polygons.append(current_poly)
-                        
-        #                 if (i<len(display_formulas)-1):
-        #                     next_poly = display_formulas[i+1]["polygon"]
-        #                     if get_vertical_distance(current_poly,next_poly)<20:
-        #                         continue
-        #                     else:
-        #                         combined_polygon = get_combined_polygon(polygons)
-        #                         formula["polygon"] = combined_polygon
-        #                         filtered_formulas.append(formula)
-        #                         screenshot_formula(image_bytes, formula["content"], combined_polygon)
-        #                         polygons = []
-        #                 else:
-        #                     combined_polygon = get_combined_polygon(polygons)
-        #                     formula["polygon"] = combined_polygon
-        #                     filtered_formulas.append(formula)
-        #                     screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                        # Check if we should combine polygons or if we are at the last formula
+                        is_last_formula = i == len(formulas) - 1
+                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-        #             if len(filtered_formulas)>0:
-        #                 for i, formula in enumerate(filtered_formulas):
-        #                     sorted_array = insert_in_reading_order(words, formula)
-        #             else:
-        #                 sorted_array = words
+                        if is_far_enough:
+                            combined_polygon = get_combined_polygon(polygons)
+                            formula["polygon"] = combined_polygon
+                            combined_formulas.append(formula)
+                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                            polygons = []  # Reset polygons for the next group
+
+                    # Insert formulas into the reading order
+                    sorted_array = words[:]
+                    for formula in combined_formulas:
+                        sorted_array = insert_in_reading_order(sorted_array, formula)
                     
-        #             for obj in sorted_array:
-        #                 if obj["type"]=="formula":
-        #                     offsets.append(previousPagesCharacterTotal+totalPageCharacters)
-        #                     formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-        #                 else:
-        #                     totalPageCharacters += (len(obj["content"])+1)
-        #             previousPagesCharacterTotal += totalPageCharacters
-        #         else:
-        #             for obj in words:
-        #                 totalPageCharacters += (len(obj["content"])+1)
-        #             previousPagesCharacterTotal += totalPageCharacters
-
-        #     output={
-        #         "recordId": id,
-        #         "data": {
-        #             "formula": formulas_output,
-        #             "offset": offsets
-        #         },
-        #         "errors": None,
-        #         "warnings": None
-        #     }
-        #     id+=1
-        #     array.append(output)
+                    # Update offsets and output
+                    for obj in sorted_array:
+                        if obj["type"]=="formula":
+                            offsets.append(total_document_characters+total_page_characters)
+                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        else:
+                            total_page_characters += (len(obj["content"])+1)
+                total_document_characters += total_page_characters
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "formula": formulas_output,
+                    "offset": offsets
+                },
+                "errors": None,
+                "warnings": None
+            }
+            array.append(output)
         response = jsonify({"values":array})
         return response, 200  # Status code should be 200 for success
-    # except FormulaProcessingError as fpe:
-    #     logging.exception("Formula processing error")
-    #     return jsonify({"error": str(fpe)}), 500
-    # except ValueError as ve:
-    #     logging.exception("Value error")
-    #     return jsonify({"error": str(ve)}), 400
+    except FormulaProcessingError as fpe:
+        logging.exception("Formula processing error")
+        return jsonify({"error": str(fpe)}), 500
+    except ValueError as ve:
+        logging.exception("Value error")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error":str(error)}), 500
+        return jsonify({"error":str(e)}), 500
 
 
 app = create_app()
