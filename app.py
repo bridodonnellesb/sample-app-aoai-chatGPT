@@ -1469,21 +1469,28 @@ async def add_page():
         exception = str(e)
         return jsonify({"error": exception}), 500
     
+class FormulaProcessingError(Exception):
+    pass
+
 def screenshot_formula(image_bytes, formula_filepath, points):
-    blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-    image = Image.open(BytesIO(image_bytes))
-    x1, y1 = points[0].x, points[0].y
-    x2, y2 = points[2].x, points[2].y
-    x1 -= 10
-    x2 += 10
-    y2 += 10
-    cropped_image = image.crop((x1, y1, x2, y2)) 
-    image_stream = BytesIO()
-    cropped_image.save(image_stream, format='JPEG') 
-    image_stream.seek(0) 
-    content_settings = ContentSettings(content_type="image/jpeg")
-    blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
-    blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob")
+    try:
+        blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
+        image = Image.open(BytesIO(image_bytes))
+        x1, y1 = points[0].x, points[0].y
+        x2, y2 = points[2].x, points[2].y
+        x1 -= 10
+        x2 += 10
+        y2 += 10
+        cropped_image = image.crop((x1, y1, x2, y2)) 
+        image_stream = BytesIO()
+        cropped_image.save(image_stream, format='JPEG') 
+        image_stream.seek(0) 
+        content_settings = ContentSettings(content_type="image/jpeg")
+        blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
+        blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob")
+    except Exception as e:
+        logging.exception("Failed to process and upload screenshot")
+        raise FormulaProcessingError(f"Error processing screenshot for {formula_filepath}") from e
 
 def get_top_left(polygon):
     min_x = min(point.x for point in polygon)
@@ -1539,112 +1546,103 @@ def get_combined_polygon(polygons):
 async def get_formula():
     try:
         request_json = await request.get_json()
-        values = request_json.get("values", None)
-        error = "values"
-        array = []
-        id = 0
-        document_analysis_client = DocumentAnalysisClient(
-            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-        )
-        error = "intelligence connection"
-        for item in values:
-            previousPagesCharacterTotal = 0
-            offsets = []
-            formulas_output = []
-            for data in item["data"]["image"]:
-                url = data["url"]
-                image = data["data"]
-                image_bytes = base64.b64decode(image)
-                error = url
-                poller = document_analysis_client.begin_analyze_document(
-                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
-                )
-                result = poller.result()
-                words = [{"polygon":obj.polygon, "content":obj.content, "type":"text"} for obj in result.pages[0].words]
-                totalPageCharacters = 0
-                if len(result.pages[0].formulas)>0:
-                    error = "begin_analyze_document"
-                    
-                    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-                    match = re.search(pattern, url)
-                    file_source = match.group(2)
-                    page_source = match.group(3)
-                    formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
+        if not request_json or "values" not in request_json:
+            raise ValueError("Invalid request payload")
+        values = request_json.get("values", None) # For one document
+        print(str(values))
+        error = str(values)
+        # array = []
+        # id = 0
+        # document_analysis_client = DocumentAnalysisClient(
+        #     endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+        # )
+        # previousPagesCharacterTotal = 0
+        # for item in values: # item = per page
+        #     url = item["data"]["image"]["url"]
+        #     image = item["data"]["image"]["data"]
+        #     image_bytes = base64.b64decode(image)
+        #     poller = document_analysis_client.begin_analyze_document(
+        #         "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
+        #     )
+        #     result = poller.result()
+        #     if result.pages and result.pages[0].words:
+        #         words = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+        #         totalPageCharacters = 0
+        #         if len(result.pages[0].formulas)>0:
+        #             pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+        #             match = re.search(pattern, url)
+        #             file_source = match.group(2)
+        #             page_source = match.group(3)
+        #             formulas = [{"polygon":f.polygon, "content":f"formula_{file_source}_{page_source}_{formula_id}.jpg", "type":"formula"} for formula_id, f in enumerate(result.pages[0].formulas)]
 
-                    display_formulas = []
-                    for i, formula in enumerate(formulas):
-                        if get_x_length(formula["polygon"])>50:
-                            display_formulas.append(formula)
+        #             display_formulas = []
+        #             for i, formula in enumerate(formulas):
+        #                 if get_x_length(formula["polygon"])>50:
+        #                     display_formulas.append(formula)
 
-                    filtered_formulas = []
-                    polygons = []
+        #             filtered_formulas = []
+        #             polygons = []
 
-                    for i, formula in enumerate(display_formulas):
-                        current_poly = formula["polygon"]
-                        polygons.append(current_poly)
-                        error = f"polygon check:{str(polygons)}"
+        #             for i, formula in enumerate(display_formulas):
+        #                 current_poly = formula["polygon"]
+        #                 polygons.append(current_poly)
                         
-                        if (i<len(display_formulas)-1):
-                            next_poly = display_formulas[i+1]["polygon"]
-                            error = f"if statement - {formula}"
-                            if get_vertical_distance(current_poly,next_poly)<20:
-                                error = "get length"
-                                continue
-                            else:
-                                error = "else"
-                                combined_polygon = get_combined_polygon(polygons)
-                                error = f"combined_polygon {combined_polygon}"
-                                formula["polygon"] = combined_polygon
-                                filtered_formulas.append(formula)
-                                error = f"filtered_formulas {formula}"
-                                screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                                error = "first_screenshot"
-                                polygons = []
-                        else:
-                            combined_polygon = get_combined_polygon(polygons)
-                            formula["polygon"] = combined_polygon
-                            filtered_formulas.append(formula)
-                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                            error = "screenshot_formula"
+        #                 if (i<len(display_formulas)-1):
+        #                     next_poly = display_formulas[i+1]["polygon"]
+        #                     if get_vertical_distance(current_poly,next_poly)<20:
+        #                         continue
+        #                     else:
+        #                         combined_polygon = get_combined_polygon(polygons)
+        #                         formula["polygon"] = combined_polygon
+        #                         filtered_formulas.append(formula)
+        #                         screenshot_formula(image_bytes, formula["content"], combined_polygon)
+        #                         polygons = []
+        #                 else:
+        #                     combined_polygon = get_combined_polygon(polygons)
+        #                     formula["polygon"] = combined_polygon
+        #                     filtered_formulas.append(formula)
+        #                     screenshot_formula(image_bytes, formula["content"], combined_polygon)
 
-                    error=f"number of formulas screenshots saved - {filtered_formulas}"
-                    if len(filtered_formulas)>0:
-                        for i, formula in enumerate(filtered_formulas):
-                            error = str(formula)
-                            sorted_array = insert_in_reading_order(words, formula)
-                    else:
-                        sorted_array = words
+        #             if len(filtered_formulas)>0:
+        #                 for i, formula in enumerate(filtered_formulas):
+        #                     sorted_array = insert_in_reading_order(words, formula)
+        #             else:
+        #                 sorted_array = words
                     
-                    for obj in sorted_array:
-                        if obj["type"]=="formula":
-                            offsets.append(previousPagesCharacterTotal+totalPageCharacters)
-                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                        else:
-                            totalPageCharacters += (len(obj["content"])+1)
-                    previousPagesCharacterTotal += totalPageCharacters
-                else:
-                    for obj in words:
-                        totalPageCharacters += (len(obj["content"])+1)
-                    previousPagesCharacterTotal += totalPageCharacters
+        #             for obj in sorted_array:
+        #                 if obj["type"]=="formula":
+        #                     offsets.append(previousPagesCharacterTotal+totalPageCharacters)
+        #                     formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+        #                 else:
+        #                     totalPageCharacters += (len(obj["content"])+1)
+        #             previousPagesCharacterTotal += totalPageCharacters
+        #         else:
+        #             for obj in words:
+        #                 totalPageCharacters += (len(obj["content"])+1)
+        #             previousPagesCharacterTotal += totalPageCharacters
 
-            output={
-                "recordId": id,
-                "data": {
-                    "formula": formulas_output,
-                    "offset": offsets
-                },
-                "errors": None,
-                "warnings": None
-            }
-            id+=1
-            array.append(output)
-        response = jsonify({"values":array})
-        return response, 200  # Status code should be 200 for success
-
+        #     output={
+        #         "recordId": id,
+        #         "data": {
+        #             "formula": formulas_output,
+        #             "offset": offsets
+        #         },
+        #         "errors": None,
+        #         "warnings": None
+        #     }
+        #     id+=1
+        #     array.append(output)
+        # response = jsonify({"values":array})
+        # return response, 200  # Status code should be 200 for success
+    # except FormulaProcessingError as fpe:
+    #     logging.exception("Formula processing error")
+    #     return jsonify({"error": str(fpe)}), 500
+    except ValueError as ve:
+        logging.exception("Value error")
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
-        logging.exception("Exception in /skillset/formula")
-        exception = str(e)
-        return jsonify({"error":exception}), 500
+        logging.exception("Unexpected exception in /skillset/formula")
+        return jsonify({"error":str(error)}), 500
 
 
 app = create_app()
