@@ -1588,7 +1588,7 @@ async def get_formula():
                 )
                 result = poller.result()
                 if len(result.pages[0].words)>0:
-                    words = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
                     formulas = get_relevant_formula(url, result, 50)
 
                     combined_formulas = []
@@ -1610,12 +1610,11 @@ async def get_formula():
                             polygons = []  # Reset polygons for the next group
 
                     # Insert formulas into the reading order
-                    sorted_array = words[:]
                     for formula in combined_formulas:
-                        sorted_array = insert_in_reading_order(sorted_array, formula)
+                        content = insert_in_reading_order(content, formula)
                     
                     # Update offsets and output
-                    for obj in sorted_array:
+                    for obj in content:
                         if obj["type"]=="formula":
                             offsets.append(total_document_characters+total_page_characters)
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
