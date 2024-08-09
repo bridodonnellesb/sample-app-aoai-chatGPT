@@ -1546,12 +1546,12 @@ def get_combined_polygon(polygons):
 async def get_formula():
     try:
         request_json = await request.get_json()
-        if not request_json or "values" not in request_json:
-            raise ValueError("Invalid request payload")
+        # if not request_json or "values" not in request_json:
+        #     raise ValueError("Invalid request payload")
         values = request_json.get("values", None) # For one document
         print(str(values))
         error = str(values)
-        # array = []
+        array = values
         # id = 0
         # document_analysis_client = DocumentAnalysisClient(
         #     endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
@@ -1632,14 +1632,14 @@ async def get_formula():
         #     }
         #     id+=1
         #     array.append(output)
-        # response = jsonify({"values":array})
-        # return response, 200  # Status code should be 200 for success
+        response = jsonify({"values":array})
+        return response, 200  # Status code should be 200 for success
     # except FormulaProcessingError as fpe:
     #     logging.exception("Formula processing error")
     #     return jsonify({"error": str(fpe)}), 500
-    except ValueError as ve:
-        logging.exception("Value error")
-        return jsonify({"error": str(ve)}), 400
+    # except ValueError as ve:
+    #     logging.exception("Value error")
+    #     return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
         return jsonify({"error":str(error)}), 500
