@@ -1581,7 +1581,7 @@ async def get_formula():
             for data in item["data"]["image"]: # going through each page of the document
                 total_page_characters = 0
                 url = data["url"]
-                image = item["data"]
+                image = data["data"]
                 image_bytes = base64.b64decode(image)
                 poller = document_analysis_client.begin_analyze_document(
                     "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
