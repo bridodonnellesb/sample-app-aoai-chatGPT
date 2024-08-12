@@ -826,12 +826,6 @@ def prepare_model_args(request_body):
 
     return model_args
 
-def getPage(midpoint_offset, page_list):
-    for page in page_list:
-        if page["Start"] <= midpoint_offset <= page["End"]:
-            return page["Page"]
-    return None  # Return None if no page matches
-
 async def promptflow_request(request):
     try:
         headers = {
@@ -1421,16 +1415,21 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]["content"]
 
+def calculate_page_number(midpoint_offset, page_list):
+    for page in page_list:
+        if page["Start"] <= midpoint_offset <= page["End"]:
+            return page["Page"]
+    return None  # Return None if no page matches
+
 @bp.route("/skillset/page", methods=["POST"]) 
-async def add_page():
+async def get_page_number():
     try:
         request_json = await request.get_json()
         values = request_json.get("values", None)
         array = []
-        id = 0
         for item in values:
-            offsets = item["data"]["offsets"]
-            pages = item["data"]["pages"]
+            offsets = item["data"]["offsets"] # offsets from the Merge Skill
+            pages = item["data"]["pages"] # chunks from the Split Skill
             page_list = []
             previous_offset = 0
             index = 0
@@ -1440,7 +1439,7 @@ async def add_page():
                 page_list.append({"Page": index, "Start": previous_offset + 1, "End": offset, "Midpoint": midpoint})
                 previous_offset = offset
 
-            pageNumbers = []
+            chunks = []
             total_offset = 0
             for i, text in enumerate(pages):
                 if i == 0:
@@ -1449,17 +1448,16 @@ async def add_page():
                 else:
                     midpoint_offset = total_offset + (len(text) - 500) // 2  # Calculate the midpoint for the current page
                     total_offset += len(text) - 500
-                pageNumbers.append(getPage(midpoint_offset, page_list))  # Use the midpoint to get the page number
+                chunks.append({"text":text, "page_number":calculate_page_number(midpoint_offset, page_list)})  # Use the midpoint to get the page number
 
             output={
-                "recordId": id,
+                "recordId": item['recordId'],
                 "data": {
-                    "pageNumber": pageNumbers
+                    "chunks": chunks
                 },
                 "errors": None,
                 "warnings": None
             }
-            id+=1
             array.append(output)
         response = jsonify({"values":array})
         return response, 200  # Status code should be 200 for success
