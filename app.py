@@ -1572,53 +1572,50 @@ async def get_formula():
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
-        for item in values: # going through the documents
+        for item in values: # going through the images
             formulas_output =[]
             offsets=[]
-            total_document_characters = 0
-            for data in item["data"]["image"]: # going through each page of the document
-                total_page_characters = 0
-                url = data["url"]
-                image = data["data"]
-                image_bytes = base64.b64decode(image)
-                poller = document_analysis_client.begin_analyze_document(
-                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
-                )
-                result = poller.result()
-                if len(result.pages[0].words)>0:
-                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                    formulas = get_relevant_formula(url, result, 50)
+            total_page_characters = 0
+            url = item["data"]["image"]["url"]
+            image = item["data"]["image"]["data"]
+            image_bytes = base64.b64decode(image)
+            poller = document_analysis_client.begin_analyze_document(
+                "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
+            )
+            result = poller.result()
+            if len(result.pages[0].words)>0:
+                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                formulas = get_relevant_formula(url, result, 50)
 
-                    combined_formulas = []
-                    polygons = []
+                combined_formulas = []
+                polygons = []
 
-                    for i, formula in enumerate(formulas):
-                        current_poly = formula["polygon"]
-                        polygons.append(current_poly)
+                for i, formula in enumerate(formulas):
+                    current_poly = formula["polygon"]
+                    polygons.append(current_poly)
 
-                        # Check if we should combine polygons or if we are at the last formula
-                        is_last_formula = i == len(formulas) - 1
-                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+                    # Check if we should combine polygons or if we are at the last formula
+                    is_last_formula = i == len(formulas) - 1
+                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                        if is_far_enough:
-                            combined_polygon = get_combined_polygon(polygons)
-                            formula["polygon"] = combined_polygon
-                            combined_formulas.append(formula)
-                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                            polygons = []  # Reset polygons for the next group
+                    if is_far_enough:
+                        combined_polygon = get_combined_polygon(polygons)
+                        formula["polygon"] = combined_polygon
+                        combined_formulas.append(formula)
+                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                        polygons = []  # Reset polygons for the next group
 
-                    # Insert formulas into the reading order
-                    for formula in combined_formulas:
-                        content = insert_in_reading_order(content, formula)
-                    
-                    # Update offsets and output
-                    for obj in content:
-                        if obj["type"]=="formula":
-                            offsets.append(total_document_characters+total_page_characters)
-                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                        else:
-                            total_page_characters += (len(obj["content"])+1)
-                total_document_characters += total_page_characters
+                # Insert formulas into the reading order
+                for formula in combined_formulas:
+                    content = insert_in_reading_order(content, formula)
+                
+                # Update offsets and output
+                for obj in content:
+                    if obj["type"]=="formula":
+                        offsets.append(total_page_characters)
+                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                    else:
+                        total_page_characters += (len(obj["content"])+1)
             output={
                 "recordId": item['recordId'],
                 "data": {
