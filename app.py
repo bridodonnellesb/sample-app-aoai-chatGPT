@@ -1639,7 +1639,7 @@ async def get_formula():
         return jsonify({"error": str(ve), "values":values}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error":str(e), "values":values}), 500
+        return jsonify({"error":str(e), "url":url,"image":image[0:50],"bytes":image_bytes}), 500
 
 
 app = create_app()
