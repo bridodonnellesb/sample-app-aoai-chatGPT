@@ -1633,13 +1633,13 @@ async def get_formula():
         return response, 200  # Status code should be 200 for success
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error")
-        return jsonify({"error": str(fpe)}), 500
+        return jsonify({"error": str(fpe), "values":values}), 500
     except ValueError as ve:
         logging.exception("Value error")
-        return jsonify({"error": str(ve)}), 400
+        return jsonify({"error": str(ve), "values":values}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error":str(e)}), 500
+        return jsonify({"error":str(e), "values":values}), 500
 
 
 app = create_app()
