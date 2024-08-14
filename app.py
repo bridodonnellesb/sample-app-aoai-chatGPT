@@ -1485,34 +1485,51 @@ def screenshot_formula(image_bytes, formula_filepath, points):
         image_stream.seek(0) 
         content_settings = ContentSettings(content_type="image/jpeg")
         blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
-        blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob")
+        blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
     except Exception as e:
         logging.exception("Failed to process and upload screenshot")
         raise FormulaProcessingError(f"Error processing screenshot for {formula_filepath}") from e
 
+class PolygonProcessingError(Exception):
+    pass
+
 def get_top_left(polygon):
-    min_x = min(point.x for point in polygon)
-    min_y = min(point.y for point in polygon)
-    return min_x, min_y
- 
+    try:
+        min_x = min(point.x for point in polygon)
+        min_y = min(point.y for point in polygon)
+        return min_x, min_y
+    except Exception as e:
+        raise PolygonProcessingError(f"Failed to get top left point of the polygon: {e}")
+
 def compare_reading_order(polygon1, polygon2):
-    point1_x, point1_y = get_top_left(polygon1)
-    point2_x, point2_y = get_top_left(polygon2)
-    if point1_y < point2_y:
-        return True
-    elif point1_y == point2_y and point1_x < point2_x:
-        return True
-    else:
-        return False
- 
+    try:
+        point1_x, point1_y = get_top_left(polygon1)
+        point2_x, point2_y = get_top_left(polygon2)
+        if point1_y < point2_y:
+            return True
+        elif point1_y == point2_y and point1_x < point2_x:
+            return True
+        else:
+            return False
+    except PolygonProcessingError as e:
+        raise e
+    except Exception as e:
+        raise PolygonProcessingError(f"Failed to compare reading order of polygons: {e}")
+
 def insert_in_reading_order(array, formula):
-    new_polygon = formula['polygon']
-    insert_index = 0
-    for i, item in enumerate(array):
-        if compare_reading_order(item['polygon'],new_polygon):
-            insert_index = i + 1
-    array.insert(insert_index, formula)
-    return array
+    try:
+        new_polygon = formula['polygon']
+        insert_index = 0
+        for i, item in enumerate(array):
+            if compare_reading_order(item['polygon'], new_polygon):
+                insert_index = i + 1
+        array.insert(insert_index, formula)
+        return array
+    except PolygonProcessingError as e:
+        raise e
+    except Exception as e:
+        raise PolygonProcessingError(f"Failed to insert formula in reading order: {e}")
+
 
 Point=namedtuple('Point',['x','y'])
 
@@ -1630,13 +1647,13 @@ async def get_formula():
         return response, 200  # Status code should be 200 for success
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error")
-        return jsonify({"error": str(fpe), "values":values}), 500
+        return jsonify({"error": str(fpe)}), 500
     except ValueError as ve:
         logging.exception("Value error")
-        return jsonify({"error": str(ve), "values":values}), 400
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error":str(e), "url":str(data)}), 500
+        return jsonify({"error":str(e)}), 500
 
 
 app = create_app()
