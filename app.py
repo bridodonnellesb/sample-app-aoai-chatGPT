@@ -71,6 +71,11 @@ BLOB_CREDENTIAL = os.environ.get("BLOB_CREDENTIAL")
 BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
 BLOB_CONTAINER = os.environ.get("BLOB_CONTAINER")
 
+
+document_analysis_client = DocumentAnalysisClient(
+    endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+)
+
 def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
@@ -1586,9 +1591,6 @@ async def get_formula():
             raise ValueError("Invalid request payload")
         values = request_json.get("values", None)
         array = []
-        document_analysis_client = DocumentAnalysisClient(
-            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-        )
         for item in values: # going through the images
             formulas_output =[]
             offsets=[]
