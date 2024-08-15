@@ -5,10 +5,12 @@ import logging
 import uuid
 from itertools import combinations
 from dotenv import load_dotenv
+from azure.core.exceptions import AzureError
 import httpx
 import requests
 import base64
 import time
+import backoff 
 from collections import namedtuple
 from quart import (
     Blueprint,
@@ -1611,6 +1613,15 @@ async def get_formula():
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
+        @backoff.on_exception(backoff.expo,
+                          (AzureError, HttpResponseError),  # Specify the exceptions you want to handle
+                          max_tries=8,  # Maximum number of retries
+                          giveup=lambda e: e.response.status_code < 500)  # Give up if it's not a server error (500+)
+        async def analyze_document_with_backoff(image_bytes):
+            poller = document_analysis_client.begin_analyze_document(
+                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+            )
+            return await poller.result()
         errors = None
         warnings = None
         for item in values: # going through the images
@@ -1622,44 +1633,45 @@ async def get_formula():
             image_bytes = base64.b64decode(image)
             is_image, image_format = is_image_bytes(image_bytes)
             if is_image:
-                time.sleep(2)
-                poller = document_analysis_client.begin_analyze_document(
-                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
-                )
-                result = poller.result()
-                if len(result.pages[0].words)>0:
-                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                    formulas = get_relevant_formula(url, result, 50)
+                try:
+                    time.sleep(2)
+                    result = await analyze_document_with_backoff(image_bytes)
+                    if len(result.pages[0].words)>0:
+                        content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                        formulas = get_relevant_formula(url, result, 50)
 
-                    combined_formulas = []
-                    polygons = []
+                        combined_formulas = []
+                        polygons = []
 
-                    for i, formula in enumerate(formulas):
-                        current_poly = formula["polygon"]
-                        polygons.append(current_poly)
+                        for i, formula in enumerate(formulas):
+                            current_poly = formula["polygon"]
+                            polygons.append(current_poly)
 
-                        # Check if we should combine polygons or if we are at the last formula
-                        is_last_formula = i == len(formulas) - 1
-                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+                            # Check if we should combine polygons or if we are at the last formula
+                            is_last_formula = i == len(formulas) - 1
+                            is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                        if is_far_enough:
-                            combined_polygon = get_combined_polygon(polygons)
-                            formula["polygon"] = combined_polygon
-                            combined_formulas.append(formula)
-                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                            polygons = []  # Reset polygons for the next group
+                            if is_far_enough:
+                                combined_polygon = get_combined_polygon(polygons)
+                                formula["polygon"] = combined_polygon
+                                combined_formulas.append(formula)
+                                screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                                polygons = []  # Reset polygons for the next group
 
-                    # Insert formulas into the reading order
-                    for formula in combined_formulas:
-                        content = insert_in_reading_order(content, formula)
-                    
-                    # Update offsets and output
-                    for obj in content:
-                        if obj["type"]=="formula":
-                            offsets.append(total_page_characters)
-                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                        else:
-                            total_page_characters += (len(obj["content"])+1)
+                        # Insert formulas into the reading order
+                        for formula in combined_formulas:
+                            content = insert_in_reading_order(content, formula)
+                        
+                        # Update offsets and output
+                        for obj in content:
+                            if obj["type"]=="formula":
+                                offsets.append(total_page_characters)
+                                formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                            else:
+                                total_page_characters += (len(obj["content"])+1)
+                except Exception as e:
+                    errors = "Failed to analyze document with backoff strategy."
+                    logging.exception("Error during document analysis with backoff")
             else:
                 warnings = "Image Bytes is not jpg or png."
             output={
