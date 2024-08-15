@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import httpx
 import requests
 import base64
+import time
 from collections import namedtuple
 from quart import (
     Blueprint,
@@ -70,11 +71,6 @@ DOCUMENT_INTELLIGENCE_KEY = os.environ.get("DOCUMENT_INTELLIGENCE_KEY")
 BLOB_CREDENTIAL = os.environ.get("BLOB_CREDENTIAL")
 BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
 BLOB_CONTAINER = os.environ.get("BLOB_CONTAINER")
-
-
-document_analysis_client = DocumentAnalysisClient(
-    endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-)
 
 def create_app():
     app = Quart(__name__)
@@ -1591,6 +1587,9 @@ async def get_formula():
             raise ValueError("Invalid request payload")
         values = request_json.get("values", None)
         array = []
+        document_analysis_client = DocumentAnalysisClient(
+            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+        )
         for item in values: # going through the images
             formulas_output =[]
             offsets=[]
@@ -1598,6 +1597,7 @@ async def get_formula():
             url = item["data"]["image"]["url"]
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
+            time.sleep(1)
             poller = document_analysis_client.begin_analyze_document(
                 "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
             )
