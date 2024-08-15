@@ -20,6 +20,7 @@ from quart import (
     render_template,
 )
 
+from azure.core.exceptions import HttpResponseError
 from PIL import Image
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.formrecognizer import DocumentAnalysisClient, AnalysisFeature
@@ -1647,6 +1648,9 @@ async def get_formula():
             array.append(output)
         response = jsonify({"values":array})
         return response, 200  # Status code should be 200 for success
+    except HttpResponseError as hre:
+        logging.exception("HttpResponseError in /skillset/formula")
+        return jsonify({"error": str(hre)}), 500
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error")
         return jsonify({"error": str(fpe)}), 500
