@@ -1562,8 +1562,8 @@ def get_combined_polygon(polygons):
 def generate_filename(url, id):    
     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
     match = re.search(pattern, url)
-    file_source = match.group(2)
-    page_source = match.group(3)
+    file_source = match.group(2) if match.group(2) else str(uuid.uuid4())
+    page_source = match.group(3) if match.group(2) else str(uuid.uuid4())
     return f"formula_{file_source}_{page_source}_{id}.jpg"
 
 def get_relevant_formula(url, result, width):
@@ -1580,6 +1580,20 @@ def get_relevant_formula(url, result, width):
         if get_x_length(f.polygon) > width
     ]
 
+def is_image_bytes(image_bytes):
+    # Common image file signatures with their magic numbers
+    image_signatures = [
+        b'\xFF\xD8\xFF\xE0',
+        b'\xFF\xD8\xFF\xE1',  # This is also common for jpg
+        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'
+    ]
+
+    # Check the start of the bytes against the image signatures
+    for signature, in image_signatures:
+        if image_bytes.startswith(signature):
+            return True
+    return False
+
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
     try:
@@ -1591,6 +1605,8 @@ async def get_formula():
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
+        errors = None
+        warnings = None
         for item in values: # going through the images
             formulas_output =[]
             offsets=[]
@@ -1598,52 +1614,56 @@ async def get_formula():
             url = item["data"]["image"]["url"]
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
-            time.sleep(1)
-            poller = document_analysis_client.begin_analyze_document(
-                "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
-            )
-            result = poller.result()
-            if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                formulas = get_relevant_formula(url, result, 50)
+            is_image = is_image_bytes(image_bytes)
+            if is_image:
+                time.sleep(2)
+                poller = document_analysis_client.begin_analyze_document(
+                    "prebuilt-read", document=image_bytes,features=[AnalysisFeature.FORMULAS]
+                )
+                result = poller.result()
+                if len(result.pages[0].words)>0:
+                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                    formulas = get_relevant_formula(url, result, 50)
 
-                combined_formulas = []
-                polygons = []
+                    combined_formulas = []
+                    polygons = []
 
-                for i, formula in enumerate(formulas):
-                    current_poly = formula["polygon"]
-                    polygons.append(current_poly)
+                    for i, formula in enumerate(formulas):
+                        current_poly = formula["polygon"]
+                        polygons.append(current_poly)
 
-                    # Check if we should combine polygons or if we are at the last formula
-                    is_last_formula = i == len(formulas) - 1
-                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+                        # Check if we should combine polygons or if we are at the last formula
+                        is_last_formula = i == len(formulas) - 1
+                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                    if is_far_enough:
-                        combined_polygon = get_combined_polygon(polygons)
-                        formula["polygon"] = combined_polygon
-                        combined_formulas.append(formula)
-                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                        polygons = []  # Reset polygons for the next group
+                        if is_far_enough:
+                            combined_polygon = get_combined_polygon(polygons)
+                            formula["polygon"] = combined_polygon
+                            combined_formulas.append(formula)
+                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                            polygons = []  # Reset polygons for the next group
 
-                # Insert formulas into the reading order
-                for formula in combined_formulas:
-                    content = insert_in_reading_order(content, formula)
-                
-                # Update offsets and output
-                for obj in content:
-                    if obj["type"]=="formula":
-                        offsets.append(total_page_characters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                    else:
-                        total_page_characters += (len(obj["content"])+1)
+                    # Insert formulas into the reading order
+                    for formula in combined_formulas:
+                        content = insert_in_reading_order(content, formula)
+                    
+                    # Update offsets and output
+                    for obj in content:
+                        if obj["type"]=="formula":
+                            offsets.append(total_page_characters)
+                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        else:
+                            total_page_characters += (len(obj["content"])+1)
+            else:
+                warnings = "Image Bytes is not jpg or png."
             output={
                 "recordId": item['recordId'],
                 "data": {
                     "formula": formulas_output,
                     "offset": offsets
                 },
-                "errors": None,
-                "warnings": None
+                "errors": errors,
+                "warnings": warnings
             }
             array.append(output)
         response = jsonify({"values":array})
