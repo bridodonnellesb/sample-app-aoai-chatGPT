@@ -1582,17 +1582,23 @@ def get_relevant_formula(url, result, width):
 
 def is_image_bytes(image_bytes):
     # Common image file signatures with their magic numbers
-    image_signatures = [
-        b'\xFF\xD8\xFF\xE0',
-        b'\xFF\xD8\xFF\xE1',  # This is also common for jpg
-        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A'
-    ]
+    image_signatures = {
+        b'\xFF\xD8\xFF\xE0': 'jpg',
+        b'\xFF\xD8\xFF\xE1': 'jpg',  # This is also common for jpg
+        b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A': 'png',
+        b'\x47\x49\x46\x38\x37\x61': 'gif',  # GIF87a
+        b'\x47\x49\x46\x38\x39\x61': 'gif',  # GIF89a
+        b'\x42\x4D': 'bmp',
+        b'\x49\x49\x2A\x00': 'tif',  # Little-endian (Intel)
+        b'\x4D\x4D\x00\x2A': 'tif',  # Big-endian (Motorola)
+        b'\x52\x49\x46\x46': 'webp',  # WebP
+    }
 
     # Check the start of the bytes against the image signatures
-    for signature, in image_signatures:
+    for signature, format in image_signatures.items():
         if image_bytes.startswith(signature):
-            return True
-    return False
+            return True, format
+    return False, None
 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
@@ -1614,7 +1620,7 @@ async def get_formula():
             url = item["data"]["image"]["url"]
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
-            is_image = is_image_bytes(image_bytes)
+            is_image, image_format = is_image_bytes(image_bytes)
             if is_image:
                 time.sleep(2)
                 poller = document_analysis_client.begin_analyze_document(
