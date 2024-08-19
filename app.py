@@ -1633,7 +1633,7 @@ async def get_document_intelligence():
                 "recordId": item['recordId'],
                 "data": {
                     "document_intelligence_results": {
-                        "words": [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.words],
+                        "words": [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words],
                         "formulas": get_relevant_formula(url, result, 50)
                     }
                 },
