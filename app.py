@@ -1632,7 +1632,10 @@ async def get_document_intelligence():
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "document_intelligence_results": result.pages[0]
+                    "document_intelligence_results": {
+                        "words": result.pages[0].words,
+                        "formulas": result.pages[0].formulas
+                    }
                 },
                 "errors": errors,
                 "warnings": warnings
