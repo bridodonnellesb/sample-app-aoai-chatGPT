@@ -1569,7 +1569,7 @@ def generate_filename(url, id):
     return f"formula_{file_source}_{page_source}_{id}.jpg"
 
 def get_relevant_formula(url, result, width):
-    if not result.pages[0].formulas:
+    if not result.formulas:
         return []
     return [
         {
@@ -1621,22 +1621,18 @@ async def get_document_intelligence():
             image_bytes = base64.b64decode(image)
             is_image, image_format = is_image_bytes(image_bytes)
             if is_image:
-                try:
-                    time.sleep(2)
-                    poller = document_analysis_client.begin_analyze_document(
-                        "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
-                    )
-                    results = poller.result()
-                except Exception as e:
-                    errors = "Failed to analyze document with backoff strategy."
-                    logging.exception("Error during document analysis with backoff")
+                time.sleep(2)
+                poller = document_analysis_client.begin_analyze_document(
+                    "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+                )
+                result = poller.result()
             else:
                 warnings = "Image Bytes is not jpg or png."
             
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "document_intelligence_results": results
+                    "document_intelligence_results": result.pages[0]
                 },
                 "errors": errors,
                 "warnings": warnings
@@ -1669,7 +1665,7 @@ async def get_formula():
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
             if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.words]
                 formulas = get_relevant_formula(url, result, 50)
 
                 combined_formulas = []
