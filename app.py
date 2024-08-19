@@ -1616,8 +1616,8 @@ async def get_document_intelligence():
         errors = None
         warnings = None
         for item in values: # going through the images
-            results = []
             image = item["data"]["image"]["data"]
+            url = item["data"]["image"]["url"]
             image_bytes = base64.b64decode(image)
             is_image, image_format = is_image_bytes(image_bytes)
             if is_image:
@@ -1633,8 +1633,8 @@ async def get_document_intelligence():
                 "recordId": item['recordId'],
                 "data": {
                     "document_intelligence_results": {
-                        "words": result.pages[0].words,
-                        "formulas": result.pages[0].formulas
+                        "words": [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.words],
+                        "formulas": get_relevant_formula(url, result, 50)
                     }
                 },
                 "errors": errors,
@@ -1663,14 +1663,11 @@ async def get_formula():
             formulas_output = []
             errors = None
             warnings = None
-            result = item["data"]["image"]["document_intelligence_results"]
-            url = item["data"]["image"]["url"]
+            content = item["data"]["image"]["document_intelligence_results"]["words"]
+            formulas = item["data"]["image"]["document_intelligence_results"]["formulas"]
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
-            if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.words]
-                formulas = get_relevant_formula(url, result, 50)
-
+            if len(content)>0:
                 combined_formulas = []
                 polygons = []
 
