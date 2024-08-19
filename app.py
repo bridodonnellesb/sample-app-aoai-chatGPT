@@ -1602,130 +1602,8 @@ def is_image_bytes(image_bytes):
             return True, format
     return False, None
 
-# @bp.route("/skillset/document_intelligence", methods=["POST"])
-# async def get_document_intelligence():
-#     try:
-#         request_json = await request.get_json()
-#         if not request_json or "values" not in request_json:
-#             raise ValueError("Invalid request payload")
-#         values = request_json.get("values", None)
-#         array = []
-#         document_analysis_client = DocumentAnalysisClient(
-#             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-#         )
-#         @backoff.on_exception(backoff.expo,
-#                           (AzureError, HttpResponseError),  # Specify the exceptions you want to handle
-#                           max_tries=8,  # Maximum number of retries
-#                           giveup=lambda e: e.response.status_code < 500)  # Give up if it's not a server error (500+)
-#         async def analyze_document_with_backoff(image_bytes):
-#             poller = document_analysis_client.begin_analyze_document(
-#                 "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
-#             )
-#             return await poller.result()
-#         errors = None
-#         warnings = None
-#         for item in values: # going through the images
-#             results = []
-#             image = item["data"]["image"]["data"]
-#             image_bytes = base64.b64decode(image)
-#             is_image, image_format = is_image_bytes(image_bytes)
-#             if is_image:
-#                 try:
-#                     time.sleep(2)
-#                     result = await analyze_document_with_backoff(image_bytes)
-#                     results.append(result)
-#                 except Exception as e:
-#                     errors = "Failed to analyze document with backoff strategy."
-#                     logging.exception("Error during document analysis with backoff")
-#             else:
-#                 warnings = "Image Bytes is not jpg or png."
-            
-#             output={
-#                 "recordId": item['recordId'],
-#                 "data": {
-#                     "document_intelligence_results": results
-#                 },
-#                 "errors": errors,
-#                 "warnings": warnings
-#             }
-#             array.append(output)
-#         response = jsonify({"values":array})
-#         return response, 200  # Status code should be 200 for success
-#     except HttpResponseError as hre:
-#         logging.exception("HttpResponseError in /skillset/document_intelligence")
-#         return jsonify({"error": str(hre)}), 500
-#     except Exception as e:
-#         logging.exception("Unexpected exception in /skillset/document_intelligence")
-#         return jsonify({"error":str(e)}), 500
-
-# @bp.route("/skillset/formula", methods=["POST"])
-# async def get_formula():
-#     try:
-#         request_json = await request.get_json()
-#         if not request_json or "values" not in request_json:
-#             raise ValueError("Invalid request payload")
-#         values = request_json.get("values", None)
-#         array = []
-#         for item in values: # going through the images
-#                     if len(results.pages[0].words)>0:
-#                         content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-#                         formulas = get_relevant_formula(url, result, 50)
-
-#                         combined_formulas = []
-#                         polygons = []
-
-#                         for i, formula in enumerate(formulas):
-#                             current_poly = formula["polygon"]
-#                             polygons.append(current_poly)
-
-#                             # Check if we should combine polygons or if we are at the last formula
-#                             is_last_formula = i == len(formulas) - 1
-#                             is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
-
-#                             if is_far_enough:
-#                                 combined_polygon = get_combined_polygon(polygons)
-#                                 formula["polygon"] = combined_polygon
-#                                 combined_formulas.append(formula)
-#                                 screenshot_formula(image_bytes, formula["content"], combined_polygon)
-#                                 polygons = []  # Reset polygons for the next group
-
-#                         # Insert formulas into the reading order
-#                         for formula in combined_formulas:
-#                             content = insert_in_reading_order(content, formula)
-                        
-#                         # Update offsets and output
-#                         for obj in content:
-#                             if obj["type"]=="formula":
-#                                 offsets.append(total_page_characters)
-#                                 formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-#                             else:
-#                                 total_page_characters += (len(obj["content"])+1)
-#             else:
-#                 warnings = "Image Bytes is not jpg or png."
-#             output={
-#                 "recordId": item['recordId'],
-#                 "data": {
-#                     "formula": formulas_output,
-#                     "offset": offsets
-#                 },
-#                 "errors": errors,
-#                 "warnings": warnings
-#             }
-#             array.append(output)
-#         response = jsonify({"values":array})
-#         return response, 200  # Status code should be 200 for success
-#     except FormulaProcessingError as fpe:
-#         logging.exception("Formula processing error")
-#         return jsonify({"error": str(fpe)}), 500
-#     except ValueError as ve:
-#         logging.exception("Value error")
-#         return jsonify({"error": str(ve)}), 400
-#     except Exception as e:
-#         logging.exception("Unexpected exception in /skillset/formula")
-#         return jsonify({"error":str(e)}), 500
-
-@bp.route("/skillset/formula", methods=["POST"])
-async def get_formula():
+@bp.route("/skillset/document_intelligence", methods=["POST"])
+async def get_document_intelligence():
     try:
         request_json = await request.get_json()
         if not request_json or "values" not in request_json:
@@ -1735,67 +1613,94 @@ async def get_formula():
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
-        @backoff.on_exception(backoff.expo,
-                          (AzureError, HttpResponseError),  # Specify the exceptions you want to handle
-                          max_tries=8,  # Maximum number of retries
-                          giveup=lambda e: e.response.status_code < 500)  # Give up if it's not a server error (500+)
-        async def analyze_document_with_backoff(image_bytes):
-            poller = document_analysis_client.begin_analyze_document(
-                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
-            )
-            return await poller.result()
         errors = None
         warnings = None
         for item in values: # going through the images
-            formulas_output =[]
-            offsets=[]
-            total_page_characters = 0
-            url = item["data"]["image"]["url"]
+            results = []
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
             is_image, image_format = is_image_bytes(image_bytes)
             if is_image:
                 try:
                     time.sleep(2)
-                    result = await analyze_document_with_backoff(image_bytes)
-                    if len(result.pages[0].words)>0:
-                        content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                        formulas = get_relevant_formula(url, result, 50)
-
-                        combined_formulas = []
-                        polygons = []
-
-                        for i, formula in enumerate(formulas):
-                            current_poly = formula["polygon"]
-                            polygons.append(current_poly)
-
-                            # Check if we should combine polygons or if we are at the last formula
-                            is_last_formula = i == len(formulas) - 1
-                            is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
-
-                            if is_far_enough:
-                                combined_polygon = get_combined_polygon(polygons)
-                                formula["polygon"] = combined_polygon
-                                combined_formulas.append(formula)
-                                screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                                polygons = []  # Reset polygons for the next group
-
-                        # Insert formulas into the reading order
-                        for formula in combined_formulas:
-                            content = insert_in_reading_order(content, formula)
-                        
-                        # Update offsets and output
-                        for obj in content:
-                            if obj["type"]=="formula":
-                                offsets.append(total_page_characters)
-                                formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                            else:
-                                total_page_characters += (len(obj["content"])+1)
+                    poller = document_analysis_client.begin_analyze_document(
+                        "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+                    )
+                    results = poller.result()
                 except Exception as e:
                     errors = "Failed to analyze document with backoff strategy."
                     logging.exception("Error during document analysis with backoff")
             else:
                 warnings = "Image Bytes is not jpg or png."
+            
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "document_intelligence_results": results
+                },
+                "errors": errors,
+                "warnings": warnings
+            }
+            array.append(output)
+        response = jsonify({"values":array})
+        return response, 200  # Status code should be 200 for success
+    except HttpResponseError as hre:
+        logging.exception("HttpResponseError in /skillset/document_intelligence")
+        return jsonify({"error": str(hre)}), 500
+    except Exception as e:
+        logging.exception("Unexpected exception in /skillset/document_intelligence")
+        return jsonify({"error":str(e)}), 500
+
+@bp.route("/skillset/formula", methods=["POST"])
+async def get_formula():
+    try:
+        request_json = await request.get_json()
+        if not request_json or "values" not in request_json:
+            raise ValueError("Invalid request payload")
+        values = request_json.get("values", None)
+        array = []
+        for item in values: # going through the images
+            offsets = []
+            formulas_output = []
+            errors = None
+            warnings = None
+            result = item["data"]["image"]["document_intelligence_results"]
+            url = item["data"]["image"]["url"]
+            image = item["data"]["image"]["data"]
+            image_bytes = base64.b64decode(image)
+            if len(result.pages[0].words)>0:
+                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                formulas = get_relevant_formula(url, result, 50)
+
+                combined_formulas = []
+                polygons = []
+
+                for i, formula in enumerate(formulas):
+                    current_poly = formula["polygon"]
+                    polygons.append(current_poly)
+
+                    # Check if we should combine polygons or if we are at the last formula
+                    is_last_formula = i == len(formulas) - 1
+                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+
+                    if is_far_enough:
+                        combined_polygon = get_combined_polygon(polygons)
+                        formula["polygon"] = combined_polygon
+                        combined_formulas.append(formula)
+                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                        polygons = []  # Reset polygons for the next group
+
+                # Insert formulas into the reading order
+                for formula in combined_formulas:
+                    content = insert_in_reading_order(content, formula)
+        
+                # Update offsets and output
+                for obj in content:
+                    if obj["type"]=="formula":
+                        offsets.append(total_page_characters)
+                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                    else:
+                        total_page_characters += (len(obj["content"])+1)
             output={
                 "recordId": item['recordId'],
                 "data": {
@@ -1808,9 +1713,6 @@ async def get_formula():
             array.append(output)
         response = jsonify({"values":array})
         return response, 200  # Status code should be 200 for success
-    except HttpResponseError as hre:
-        logging.exception("HttpResponseError in /skillset/formula")
-        return jsonify({"error": str(hre)}), 500
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error")
         return jsonify({"error": str(fpe)}), 500
@@ -1820,6 +1722,5 @@ async def get_formula():
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
         return jsonify({"error":str(e)}), 500
-
 
 app = create_app()
