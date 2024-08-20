@@ -1611,24 +1611,32 @@ async def get_formula():
             raise ValueError("Invalid request payload")
         values = request_json.get("values", None)
         array = []
+        breakpoint = "creating document analysis client"
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
+        breakpoint = "document analysis client created"
         errors = None
         warnings = None
         for item in values: # going through the images
+            breakpoint = "for loop started"
             formulas_output =[]
             offsets=[]
             total_page_characters = 0
             image = item["data"]["image"]["data"]
             url = item["data"]["image"]["url"]
             print(url)
+            breakpoint = f"running {str(url)}"
             image_bytes = base64.b64decode(image)
             time.sleep(2)
+            breakpoint = "running analyze_document_with_retries for {url}"
             result = analyze_document_with_retries(document_analysis_client, image_bytes)
+            breakpoint = "analyze_document_with_retries completed for {url}"
             if len(result.pages[0].words)>0:
                 content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                breakpoint = "running get revelant formula for {url}"
                 formulas = get_relevant_formula(url, result, 50)
+                breakpoint = "got revelant formula for {url}"
                 combined_formulas = []
                 polygons = []
                 for i, formula in enumerate(formulas):
@@ -1642,7 +1650,9 @@ async def get_formula():
                         combined_polygon = get_combined_polygon(polygons)
                         formula["polygon"] = combined_polygon
                         combined_formulas.append(formula)
+                        breakpoint = "saving formula for {url}"
                         screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                        breakpoint = "formula saved for {url}"
                         polygons = []  # Reset polygons for the next group
                 # Insert formulas into the reading order
                 for formula in combined_formulas:
@@ -1650,6 +1660,7 @@ async def get_formula():
                 # Update offsets and output
                 for obj in content:
                     if obj["type"]=="formula":
+                        breakpoint = "extracting formula for {url}"
                         print("Extracting Formula")
                         offsets.append(total_page_characters)
                         formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
@@ -1670,16 +1681,16 @@ async def get_formula():
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
-        return jsonify({"error": str(hre)}), 500
+        return jsonify({"HttpResponseError": str(hre), "breakpoint":str(breakpoint)}), 500
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error")
-        return jsonify({"error": str(fpe)}), 500
+        return jsonify({"FormulaProcessingError": str(fpe), "breakpoint":str(breakpoint)}), 500
     except ValueError as ve:
         logging.exception("Value error")
-        return jsonify({"error": str(ve)}), 400
+        return jsonify({"ValueError": str(ve), "breakpoint":str(breakpoint)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error":str(e)}), 500
+        return jsonify({"error":str(e), "breakpoint":str(breakpoint)}), 500
  
 
 app = create_app()
