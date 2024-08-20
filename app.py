@@ -1632,10 +1632,8 @@ async def get_document_intelligence():
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "document_intelligence_results": {
-                        "words": [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words],
-                        "formulas": get_relevant_formula(url, result, 50)
-                    }
+                    "document_intelligence_words": [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words],
+                    "document_intelligence_formulas": get_relevant_formula(url, result, 50)
                 },
                 "errors": errors,
                 "warnings": warnings
@@ -1663,8 +1661,8 @@ async def get_formula():
             formulas_output = []
             errors = None
             warnings = None
-            content = item["data"]["image"]["document_intelligence_results"]["words"]
-            formulas = item["data"]["image"]["document_intelligence_results"]["formulas"]
+            content = item["data"]["image"]["document_intelligence_words"]
+            formulas = item["data"]["image"]["document_intelligence_formulas"]
             image = item["data"]["image"]["data"]
             image_bytes = base64.b64decode(image)
             if len(content)>0:
