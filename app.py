@@ -1692,7 +1692,7 @@ async def get_formula():
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
         # return jsonify({"error":str(e), "breakpoint":str(breakpoint)}), 500
-        return jsonify({"error":str(breakpoint)}), 400
+        return jsonify({"error":str(breakpoint)}), 500
  
 
 app = create_app()
