@@ -1569,7 +1569,7 @@ def generate_filename(url, id):
     return f"formula_{file_source}_{page_source}_{id}.jpg"
 
 def get_relevant_formula(url, result, width):
-    if not result.formulas:
+    if not result.pages[0].formulas:
         return []
     return [
         {
