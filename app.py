@@ -1622,7 +1622,9 @@ async def get_formula():
             total_page_characters = 0
             image = item["data"]["image"]["data"]
             url = item["data"]["image"]["url"]
+            print(url)
             image_bytes = base64.b64decode(image)
+            time.sleep(2)
             result = analyze_document_with_retries(document_analysis_client, image_bytes)
             if len(result.pages[0].words)>0:
                 content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
@@ -1648,6 +1650,7 @@ async def get_formula():
                 # Update offsets and output
                 for obj in content:
                     if obj["type"]=="formula":
+                        print("Extracting Formula")
                         offsets.append(total_page_characters)
                         formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                     else:
