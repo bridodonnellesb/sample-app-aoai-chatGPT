@@ -1616,51 +1616,54 @@ async def get_formula():
         )
         errors = None
         warnings = None
-        for item in values: # going through the images
-            formulas_output =[]
-            offsets=[]
-            total_page_characters = 0
-            image = item["data"]["image"]["data"]
-            url = item["data"]["image"]["url"]
-            print(url)
-            image_bytes = base64.b64decode(image)
-            time.sleep(2)
-            result = analyze_document_with_retries(document_analysis_client, image_bytes)
-            if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                formulas = get_relevant_formula(url, result, 50)
-                combined_formulas = []
-                polygons = []
-                for i, formula in enumerate(formulas):
-                    current_poly = formula["polygon"]
-                    polygons.append(current_poly)
-                        # Check if we should combine polygons or if we are at the last formula
-                    is_last_formula = i == len(formulas) - 1
-                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+        for item in values: # going through the documents
+            images = item["data"]["images"]
+            for i, image in enumerate(images): # going through the images in a document
+                image_data = image["data"]
+                url = image["url"]
+                formulas_output =[]
+                offsets=[]
+                total_page_characters = 0
+                print(url)
+                image_bytes = base64.b64decode(image_data)
+                time.sleep(2)
+                result = analyze_document_with_retries(document_analysis_client, image_bytes)
+                if len(result.pages[0].words)>0:
+                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                    formulas = get_relevant_formula(url, result, 50)
+                    combined_formulas = []
+                    polygons = []
+                    for i, formula in enumerate(formulas):
+                        current_poly = formula["polygon"]
+                        polygons.append(current_poly)
+                            # Check if we should combine polygons or if we are at the last formula
+                        is_last_formula = i == len(formulas) - 1
+                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                    if is_far_enough:
-                        combined_polygon = get_combined_polygon(polygons)
-                        formula["polygon"] = combined_polygon
-                        combined_formulas.append(formula)
-                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                        polygons = []  # Reset polygons for the next group
-                # Insert formulas into the reading order
-                for formula in combined_formulas:
-                    content = insert_in_reading_order(content, formula)
-                # Update offsets and output
-                for obj in content:
-                    if obj["type"]=="formula":
-                        print("Extracting Formula")
-                        offsets.append(total_page_characters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                    else:
-                        total_page_characters += (len(obj["content"])+1)
+                        if is_far_enough:
+                            combined_polygon = get_combined_polygon(polygons)
+                            formula["polygon"] = combined_polygon
+                            combined_formulas.append(formula)
+                            screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                            polygons = []  # Reset polygons for the next group
+                    # Insert formulas into the reading order
+                    for formula in combined_formulas:
+                        content = insert_in_reading_order(content, formula)
+                    # Update offsets and output
+                    for obj in content:
+                        if obj["type"]=="formula":
+                            print("Extracting Formula")
+                            offsets.append(total_page_characters)
+                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        else:
+                            total_page_characters += (len(obj["content"])+1)
+                images[i]["offsets"]=offsets
+                images[i]["formulas_output"]=formulas_output
 
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "formula": formulas_output,
-                    "offset": offsets
+                    "images":images
                 },
                 "errors": errors,
                 "warnings": warnings
