@@ -1633,7 +1633,7 @@ async def get_formula():
             breakpoint = f"analyze_document_with_retries completed for {str(url)}"
             if len(result.pages[0].words)>0:
                 content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                breakpoint = "running get revelant formula for {url}"
+                breakpoint = f"running get revelant formula for {str(url)}"
                 formulas = get_relevant_formula(url, result, 50)
                 breakpoint = f"got revelant formula for {str(url)}"
                 combined_formulas = []
