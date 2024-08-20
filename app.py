@@ -1582,6 +1582,27 @@ def get_relevant_formula(url, result, width):
         if get_x_length(f.polygon) > width
     ]
 
+# Define a function to perform the analysis with retries
+def analyze_document_with_retries(document_analysis_client, image_bytes, max_retries=3, initial_delay=1):
+    retry_count = 0
+    delay = initial_delay
+    while retry_count < max_retries:
+        try:
+            poller = document_analysis_client.begin_analyze_document(
+                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+            )
+            result = poller.result()
+            return result  # If successful, return the result
+        except HttpResponseError as e:
+            if e.status_code == 408:  # Check if the error is a timeout
+                logging.warning(f"Request timed out. Retrying {retry_count + 1}/{max_retries}...")
+                time.sleep(delay)  # Wait before retrying
+                delay *= 2  # Exponential backoff
+                retry_count += 1
+            else:
+                raise  # If the error is not a timeout, re-raise the exception
+    raise Exception("Max retries reached for document analysis")
+
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
     try:
@@ -1602,10 +1623,7 @@ async def get_formula():
             image = item["data"]["image"]["data"]
             url = item["data"]["image"]["url"]
             image_bytes = base64.b64decode(image)
-            poller = document_analysis_client.begin_analyze_document(
-                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
-            )
-            result = poller.result()
+            result = analyze_document_with_retries(document_analysis_client, image_bytes)
             if len(result.pages[0].words)>0:
                 content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
                 formulas = get_relevant_formula(url, result, 50)
