@@ -1623,8 +1623,8 @@ async def get_formula():
             for i, image in enumerate(images): # going through the images in a document
                 image_data = image["data"]
                 url = image["url"]
-                formulas_output =[""]
-                offsets=[0]
+                formulas_output =[]
+                offsets=[]
                 total_page_characters = 0
                 print(url)
                 image_bytes = base64.b64decode(image_data)
