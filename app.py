@@ -1620,11 +1620,11 @@ async def get_formula():
         warnings = None
         for item in values: # going through the documents
             images = item["data"]["image"]
-            for i, image in enumerate(images): # going through the images in a document
+            for index, image in enumerate(images): # going through the images in a document
                 image_data = image["data"]
                 url = image["url"]
-                formulas_output =[""]
-                offsets=[0]
+                formulas_output =[]
+                offsets=[]
                 total_page_characters = 0
                 print(url)
                 image_bytes = base64.b64decode(image_data)
@@ -1659,8 +1659,8 @@ async def get_formula():
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                         else:
                             total_page_characters += (len(obj["content"])+1)
-                images[i]["offsets"]=offsets
-                images[i]["formulas_output"]=formulas_output
+                images[index]["offsets"]=offsets
+                images[index]["formulas_output"]=formulas_output
 
             output={
                 "recordId": item['recordId'],
