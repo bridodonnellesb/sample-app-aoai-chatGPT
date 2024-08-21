@@ -1679,12 +1679,12 @@ async def get_formula():
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
-        return jsonify({"error": str(hre)}), 500
+        return jsonify({"HttpResponseError error": str(hre)}), 500
         # return jsonify({"error": str(hre), "breakpoint":str(breakpoint)}), 500
         # return jsonify({"error":str(breakpoint)}), 500
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error in /skillset/formula")
-        return jsonify({"error": str(fpe)}), 500
+        return jsonify({"Formula error": str(fpe)}), 500
         # return jsonify({"error": str(fpe), "breakpoint":str(breakpoint)}), 500
         # return jsonify({"error":str(breakpoint)}), 500
     except ValueError as ve:
@@ -1694,7 +1694,7 @@ async def get_formula():
         # return jsonify({"error":str(breakpoint)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"Unexpected error": str(e)}), 500
         # return jsonify({"error":str(e), "breakpoint":str(breakpoint)}), 500
         # return jsonify({"error":str(breakpoint)}), 500
  
