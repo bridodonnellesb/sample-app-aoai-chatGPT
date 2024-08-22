@@ -1612,7 +1612,7 @@ async def get_formula():
         if not request_json or "values" not in request_json:
             raise ValueError("Invalid request payload")
         values = request_json.get("values", None)
-        array = []
+        response_array = []
         # breakpoint = "creating document analysis client"
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
@@ -1621,9 +1621,10 @@ async def get_formula():
         errors = None
         warnings = None
         for item in values: # going through the documents
-            images = item["data"]["image"]
-            for index, image in enumerate(images): # going through the images in a document
-                url = image["url"]
+            urls = item["data"]["url"]
+            texts = item["data"]["text"]
+            document_pages = []
+            for index, url in enumerate(urls): # going each page of a document
                 url_with_sas = f"{url}?{generate_SAS(url)}"
                 formulas_output =[]
                 offsets=[]
@@ -1658,19 +1659,22 @@ async def get_formula():
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                         else:
                             total_page_characters += (len(obj["content"])+1)
-                images[index]["offsets"]=offsets
-                images[index]["formulas_output"]=formulas_output
+                document_pages.append({
+                    "text":texts[index],
+                    "formula":formulas_output,
+                    "offset":offsets
+                })
 
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "image":images
+                    "images":document_pages
                 },
                 "errors": errors,
                 "warnings": warnings
             }
-            array.append(output)
-        response = jsonify({"values":array})
+            response_array.append(output)
+        response = jsonify({"values":response_array})
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
