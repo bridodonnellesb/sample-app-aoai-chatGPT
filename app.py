@@ -45,7 +45,8 @@ from backend.utils import (
     format_non_streaming_response,
     convert_to_pf_format,
     format_pf_non_streaming_response,
-    remove_SAS_token
+    remove_SAS_token,
+    generate_SAS
 )
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
@@ -1474,10 +1475,11 @@ async def get_page_number():
 class FormulaProcessingError(Exception):
     pass
 
-def screenshot_formula(image_bytes, formula_filepath, points):
+def screenshot_formula(url, formula_filepath, points):
     try:
         blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-        image = Image.open(BytesIO(image_bytes))
+        response=requests.get(url)
+        image = Image.open(BytesIO(response.content))
         x1, y1 = points[0].x, points[0].y
         x2, y2 = points[2].x, points[2].y
         x1 -= 10
@@ -1583,13 +1585,13 @@ def get_relevant_formula(url, result, width):
     ]
 
 # Define a function to perform the analysis with retries
-def analyze_document_with_retries(document_analysis_client, image_bytes, max_retries=3, initial_delay=1):
+def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=1):
     retry_count = 0
     delay = initial_delay
     while retry_count < max_retries:
         try:
-            poller = document_analysis_client.begin_analyze_document(
-                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+            poller = document_analysis_client.begin_analyze_document_from_url(
+                "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
             )
             result = poller.result()
             return result  # If successful, return the result
@@ -1618,58 +1620,51 @@ async def get_formula():
         # breakpoint = "document analysis client created"
         errors = None
         warnings = None
-        for item in values: # going through the images
-            # breakpoint = "for loop started"
-            formulas_output =[]
-            offsets=[]
-            total_page_characters = 0
-            image = item["data"]["image"]["data"]
-            url = item["data"]["image"]["url"]
-            # breakpoint = f"running {str(url)}"
-            image_bytes = base64.b64decode(image)
-            time.sleep(2)
-            # breakpoint = f"running analyze_document_with_retries for {str(url)}"
-            result = analyze_document_with_retries(document_analysis_client, image_bytes)
-            # breakpoint = f"analyze_document_with_retries completed for {str(url)}"
-            if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                # breakpoint = f"running get revelant formula for {str(url)}"
-                formulas = get_relevant_formula(url, result, 50)
-                # breakpoint = f"got revelant formula for {str(url)}"
-                combined_formulas = []
-                polygons = []
-                for i, formula in enumerate(formulas):
-                    current_poly = formula["polygon"]
-                    polygons.append(current_poly)
-                    # Check if we should combine polygons or if we are at the last formula
-                    is_last_formula = i == len(formulas) - 1
-                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+        for item in values: # going through the documents
+            images = item["data"]["image"]
+            for index, image in enumerate(images): # going through the images in a document
+                url = image["url"]
+                url_with_sas = f"{url}?{generate_SAS(url)}"
+                formulas_output =[]
+                offsets=[]
+                total_page_characters = 0
+                time.sleep(2)
+                result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+                if len(result.pages[0].words)>0:
+                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                    formulas = get_relevant_formula(url, result, 50)
+                    combined_formulas = []
+                    polygons = []
+                    for i, formula in enumerate(formulas):
+                        current_poly = formula["polygon"]
+                        polygons.append(current_poly)
+                            # Check if we should combine polygons or if we are at the last formula
+                        is_last_formula = i == len(formulas) - 1
+                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                    if is_far_enough:
-                        combined_polygon = get_combined_polygon(polygons)
-                        formula["polygon"] = combined_polygon
-                        combined_formulas.append(formula)
-                        # breakpoint = f"saving formula for {str(url)}"
-                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                        # breakpoint = f"formula saved for {str(url)}"
-                        polygons = []  # Reset polygons for the next group
-                # Insert formulas into the reading order
-                for formula in combined_formulas:
-                    content = insert_in_reading_order(content, formula)
-                # Update offsets and output
-                for obj in content:
-                    if obj["type"]=="formula":
-                        # breakpoint = f"extracting formula for {str(url)}"
-                        offsets.append(total_page_characters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                    else:
-                        total_page_characters += (len(obj["content"])+1)
+                        if is_far_enough:
+                            combined_polygon = get_combined_polygon(polygons)
+                            formula["polygon"] = combined_polygon
+                            combined_formulas.append(formula)
+                            screenshot_formula(url_with_sas, formula["content"], combined_polygon)
+                            polygons = []  # Reset polygons for the next group
+                    # Insert formulas into the reading order
+                    for formula in combined_formulas:
+                        content = insert_in_reading_order(content, formula)
+                    # Update offsets and output
+                    for obj in content:
+                        if obj["type"]=="formula":
+                            offsets.append(total_page_characters)
+                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        else:
+                            total_page_characters += (len(obj["content"])+1)
+                images[index]["offsets"]=offsets
+                images[index]["formulas_output"]=formulas_output
 
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "formula": formulas_output,
-                    "offset": offsets
+                    "image":images
                 },
                 "errors": errors,
                 "warnings": warnings
