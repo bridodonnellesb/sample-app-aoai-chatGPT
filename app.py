@@ -11,6 +11,7 @@ import requests
 import base64
 import time
 import backoff 
+import datetime
 from collections import namedtuple
 from quart import (
     Blueprint,
@@ -1621,6 +1622,8 @@ async def get_formula():
         # breakpoint = "document analysis client created"
         errors = None
         warnings = None
+        with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_input_values.txt", "w") as file:
+            file.write(values)
         for item in values: # going through the documents
             urls = item["data"]["url"]
             texts = item["data"]["text"]
@@ -1632,6 +1635,8 @@ async def get_formula():
                 total_page_characters = 0
                 time.sleep(20)
                 result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+                with open(f"urls_analysed.txt", "a") as file5:
+                    file5.write(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")} -------- {url}")
                 if len(result.pages[0].words)>0:
                     content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
                     formulas = get_relevant_formula(url, result, 50)
@@ -1660,11 +1665,15 @@ async def get_formula():
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
                         else:
                             total_page_characters += (len(obj["content"])+1)
-                document_pages.append({
+
+                page_data = {
                     "text":texts[index],
                     "formula":formulas_output,
                     "offset":offsets
-                })
+                }
+                with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_{url}.txt", "w") as file2:
+                    file2.write(page_data)
+                document_pages.append()
 
             output={
                 "recordId": item['recordId'],
@@ -1674,8 +1683,12 @@ async def get_formula():
                 "errors": errors,
                 "warnings": warnings
             }
+            with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_document_{item['recordId']}.txt", "w") as file3:
+                file3.write(output)
             response_array.append(output)
         response = jsonify({"values":response_array})
+        with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_success.txt" , "w") as file4:
+                file4.write("It returned stuff.")
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
