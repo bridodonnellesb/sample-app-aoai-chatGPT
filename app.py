@@ -1489,6 +1489,7 @@ def screenshot_formula(url, formula_filepath, points):
         image_stream = BytesIO()
         cropped_image.save(image_stream, format='JPEG') 
         image_stream.seek(0) 
+        time.sleep(10)
         content_settings = ContentSettings(content_type="image/jpeg")
         blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
         blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
@@ -1585,7 +1586,7 @@ def get_relevant_formula(url, result, width):
     ]
 
 # Define a function to perform the analysis with retries
-def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=1):
+def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=10):
     retry_count = 0
     delay = initial_delay
     while retry_count < max_retries:
@@ -1599,7 +1600,7 @@ def analyze_document_with_retries(document_analysis_client, url_with_sas, max_re
             if e.status_code == 408:  # Check if the error is a timeout
                 logging.warning(f"Request timed out. Retrying {retry_count + 1}/{max_retries}...")
                 time.sleep(delay)  # Wait before retrying
-                delay *= 2  # Exponential backoff
+                delay *= 3  # Exponential backoff
                 retry_count += 1
             else:
                 raise  # If the error is not a timeout, re-raise the exception
@@ -1629,7 +1630,7 @@ async def get_formula():
                 formulas_output =[]
                 offsets=[]
                 total_page_characters = 0
-                time.sleep(2)
+                time.sleep(20)
                 result = analyze_document_with_retries(document_analysis_client, url_with_sas)
                 if len(result.pages[0].words)>0:
                     content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
