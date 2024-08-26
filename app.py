@@ -47,7 +47,8 @@ from backend.utils import (
     convert_to_pf_format,
     format_pf_non_streaming_response,
     remove_SAS_token,
-    generate_SAS
+    generate_SAS,
+    split_url
 )
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
@@ -1671,8 +1672,9 @@ async def get_formula():
                     "formula":formulas_output,
                     "offset":offsets
                 }
+                blob_container, blob_name = split_url(url)
                 current_time3 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-                with open(f"{current_time3}_{url}.txt", "w") as file3:
+                with open(f"{current_time3}_{blob_name.replace("jpg","")}.txt", "w") as file3:
                     file3.write(str(page_data))
                 document_pages.append(page_data)
 
