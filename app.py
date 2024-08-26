@@ -1622,7 +1622,7 @@ async def get_formula():
         warnings = None
         current_time1 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         with open(f"{current_time1}_input_values.txt", "w") as file:
-            file.write(values)
+            file.write(str(values))
         for item in values: # going through the documents
             urls = item["data"]["url"]
             texts = item["data"]["text"]
@@ -1673,7 +1673,7 @@ async def get_formula():
                 }
                 current_time3 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
                 with open(f"{current_time3}_{url}.txt", "w") as file3:
-                    file3.write(page_data)
+                    file3.write(str(page_data))
                 document_pages.append(page_data)
 
             output={
@@ -1689,7 +1689,7 @@ async def get_formula():
         current_time4 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         records = [item["recordId"] for item in response_array]
         with open(f"{current_time4}_success.txt" , "w") as file4:
-            file4.write(records)
+            file4.write(str(records))
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
