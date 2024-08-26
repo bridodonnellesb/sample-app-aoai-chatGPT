@@ -1490,7 +1490,7 @@ def screenshot_formula(url, formula_filepath, points):
         image_stream = BytesIO()
         cropped_image.save(image_stream, format='JPEG') 
         image_stream.seek(0) 
-        time.sleep(10)
+        time.sleep(5)
         content_settings = ContentSettings(content_type="image/jpeg")
         blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
         blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
@@ -1615,14 +1615,13 @@ async def get_formula():
             raise ValueError("Invalid request payload")
         values = request_json.get("values", None)
         response_array = []
-        # breakpoint = "creating document analysis client"
         document_analysis_client = DocumentAnalysisClient(
             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
         )
-        # breakpoint = "document analysis client created"
         errors = None
         warnings = None
-        with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_input_values.txt", "w") as file:
+        current_time1 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        with open(f"{current_time1}_input_values.txt", "w") as file:
             file.write(values)
         for item in values: # going through the documents
             urls = item["data"]["url"]
@@ -1633,10 +1632,11 @@ async def get_formula():
                 formulas_output =[]
                 offsets=[]
                 total_page_characters = 0
-                time.sleep(20)
+                time.sleep(5)
                 result = analyze_document_with_retries(document_analysis_client, url_with_sas)
-                with open(f"urls_analysed.txt", "a") as file5:
-                    file5.write(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")} -------- {url}")
+                current_time2 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+                with open(f"urls_analysed.txt", "a") as file2:
+                    file2.write(f"{current_time2} -------- {url}")
                 if len(result.pages[0].words)>0:
                     content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
                     formulas = get_relevant_formula(url, result, 50)
@@ -1671,9 +1671,10 @@ async def get_formula():
                     "formula":formulas_output,
                     "offset":offsets
                 }
-                with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_{url}.txt", "w") as file2:
-                    file2.write(page_data)
-                document_pages.append()
+                current_time3 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+                with open(f"{current_time3}_{url}.txt", "w") as file3:
+                    file3.write(page_data)
+                document_pages.append(page_data)
 
             output={
                 "recordId": item['recordId'],
@@ -1683,33 +1684,25 @@ async def get_formula():
                 "errors": errors,
                 "warnings": warnings
             }
-            with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_document_{item['recordId']}.txt", "w") as file3:
-                file3.write(output)
             response_array.append(output)
         response = jsonify({"values":response_array})
-        with open(f"{datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")}_success.txt" , "w") as file4:
-                file4.write("It returned stuff.")
+        current_time4 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        records = [item["recordId"] for item in response_array]
+        with open(f"{current_time4}_success.txt" , "w") as file4:
+            file4.write(records)
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
         return jsonify({"HttpResponseError error": str(hre)}), 500
-        # return jsonify({"error": str(hre), "breakpoint":str(breakpoint)}), 500
-        # return jsonify({"error":str(breakpoint)}), 500
     except FormulaProcessingError as fpe:
         logging.exception("Formula processing error in /skillset/formula")
         return jsonify({"Formula error": str(fpe)}), 500
-        # return jsonify({"error": str(fpe), "breakpoint":str(breakpoint)}), 500
-        # return jsonify({"error":str(breakpoint)}), 500
     except ValueError as ve:
         logging.exception("Value error in /skillset/formula")
         return jsonify({"error": str(ve)}), 400
-        # return jsonify({"error": str(ve), "breakpoint":str(breakpoint)}), 400
-        # return jsonify({"error":str(breakpoint)}), 400
     except Exception as e:
         logging.exception("Unexpected exception in /skillset/formula")
         return jsonify({"Unexpected error": str(e)}), 500
-        # return jsonify({"error":str(e), "breakpoint":str(breakpoint)}), 500
-        # return jsonify({"error":str(breakpoint)}), 500
  
 
 app = create_app()
