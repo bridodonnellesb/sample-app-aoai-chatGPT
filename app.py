@@ -1621,23 +1621,22 @@ async def get_formula():
         )
         errors = None
         warnings = None
-        current_time1 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        with open(f"{current_time1}_input_values.txt", "w") as file:
-            file.write(str(values))
-        for item in values: # going through the documents
+        logging.info(f"{len(values)} documents received.")
+        for document_number, item in enumerate(values): # going through the documents
             urls = item["data"]["url"]
             texts = item["data"]["text"]
+            logging.info(f"Document {document_number} has {len(urls)} pages")
             document_pages = []
             for index, url in enumerate(urls): # going each page of a document
+                logging.info(f"Starting Page {index} ({url}) for Document {document_number}")
                 url_with_sas = f"{url}?{generate_SAS(url)}"
                 formulas_output =[]
                 offsets=[]
                 total_page_characters = 0
                 time.sleep(5)
+                logging.info(f"Page {index} ({url}) start analyzing.")
                 result = analyze_document_with_retries(document_analysis_client, url_with_sas)
-                current_time2 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-                with open(f"urls_analysed.txt", "a") as file2:
-                    file2.write(f"{current_time2} -------- {url}")
+                logging.info(f"Page {index} ({url}) successfully analyzed.")
                 if len(result.pages[0].words)>0:
                     content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
                     formulas = get_relevant_formula(url, result, 50)
@@ -1654,16 +1653,23 @@ async def get_formula():
                             combined_polygon = get_combined_polygon(polygons)
                             formula["polygon"] = combined_polygon
                             combined_formulas.append(formula)
+                            logging.info(f"Saving screenshot from Page {index} ({url})")
                             screenshot_formula(url_with_sas, formula["content"], combined_polygon)
+                            logging.info(f"Successfully saved screenshot from Page {index} ({url})")
                             polygons = []  # Reset polygons for the next group
                     # Insert formulas into the reading order
+                    logging.info("Inserting formulas into reading order")
                     for formula in combined_formulas:
                         content = insert_in_reading_order(content, formula)
+                    logging.info("Successfully inserted formulas into reading order")
+
                     # Update offsets and output
                     for obj in content:
                         if obj["type"]=="formula":
+                            logging.info("Appending character offsets and url")
                             offsets.append(total_page_characters)
                             formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                            logging.info("Successfully appended character offsets and url")
                         else:
                             total_page_characters += (len(obj["content"])+1)
 
@@ -1672,12 +1678,8 @@ async def get_formula():
                     "formula":formulas_output,
                     "offset":offsets
                 }
-                blob_container, blob_name = split_url(url)
-                current_time3 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-                with open(f"{current_time3}_{blob_name.replace("jpg","")}.txt", "w") as file3:
-                    file3.write(str(page_data))
                 document_pages.append(page_data)
-
+                logging.info(f"Completed Page {index} ({url}) for Document {document_number}")
             output={
                 "recordId": item['recordId'],
                 "data": {
@@ -1687,11 +1689,9 @@ async def get_formula():
                 "warnings": warnings
             }
             response_array.append(output)
+            logging.info(f"Completed Document {document_number}")
         response = jsonify({"values":response_array})
-        current_time4 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        records = [item["recordId"] for item in response_array]
-        with open(f"{current_time4}_success.txt" , "w") as file4:
-            file4.write(str(records))
+        logging.info("Completed request")
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
