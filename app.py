@@ -11,7 +11,7 @@ import requests
 import base64
 import time
 import backoff 
-import datetime
+from datetime import datetime, timezone
 from collections import namedtuple
 from quart import (
     Blueprint,
@@ -1620,7 +1620,7 @@ async def get_formula():
         )
         errors = None
         warnings = None
-        current_time1 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        current_time1 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         with open(f"{current_time1}_input_values.txt", "w") as file:
             file.write(values)
         for item in values: # going through the documents
@@ -1634,7 +1634,7 @@ async def get_formula():
                 total_page_characters = 0
                 time.sleep(5)
                 result = analyze_document_with_retries(document_analysis_client, url_with_sas)
-                current_time2 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+                current_time2 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
                 with open(f"urls_analysed.txt", "a") as file2:
                     file2.write(f"{current_time2} -------- {url}")
                 if len(result.pages[0].words)>0:
@@ -1671,7 +1671,7 @@ async def get_formula():
                     "formula":formulas_output,
                     "offset":offsets
                 }
-                current_time3 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+                current_time3 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
                 with open(f"{current_time3}_{url}.txt", "w") as file3:
                     file3.write(page_data)
                 document_pages.append(page_data)
@@ -1686,7 +1686,7 @@ async def get_formula():
             }
             response_array.append(output)
         response = jsonify({"values":response_array})
-        current_time4 = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+        current_time4 = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         records = [item["recordId"] for item in response_array]
         with open(f"{current_time4}_success.txt" , "w") as file4:
             file4.write(records)
