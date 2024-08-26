@@ -1480,7 +1480,9 @@ class FormulaProcessingError(Exception):
 def screenshot_formula(url, formula_filepath, points):
     try:
         blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-        response=requests.get(url)
+        logging.info("Requesting Image")
+        response=requests.get(url, timeout=30)
+        logging.info("Successfully accessed image")
         image = Image.open(BytesIO(response.content))
         x1, y1 = points[0].x, points[0].y
         x2, y2 = points[2].x, points[2].y
@@ -1492,9 +1494,11 @@ def screenshot_formula(url, formula_filepath, points):
         cropped_image.save(image_stream, format='JPEG') 
         image_stream.seek(0) 
         time.sleep(5)
+        logging.info("Saving image to blob storage")
         content_settings = ContentSettings(content_type="image/jpeg")
         blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
         blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
+        logging.info("Successfully saved image to blob storage")
     except Exception as e:
         logging.exception("Failed to process and upload screenshot")
         raise FormulaProcessingError(f"Error processing screenshot for {formula_filepath}") from e
@@ -1588,25 +1592,25 @@ def get_relevant_formula(url, result, width):
     ]
 
 # Define a function to perform the analysis with retries
-def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=10):
-    retry_count = 0
-    delay = initial_delay
-    while retry_count < max_retries:
-        try:
-            poller = document_analysis_client.begin_analyze_document_from_url(
-                "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
-            )
-            result = poller.result()
-            return result  # If successful, return the result
-        except HttpResponseError as e:
-            if e.status_code == 408:  # Check if the error is a timeout
-                logging.warning(f"Request timed out. Retrying {retry_count + 1}/{max_retries}...")
-                time.sleep(delay)  # Wait before retrying
-                delay *= 3  # Exponential backoff
-                retry_count += 1
-            else:
-                raise  # If the error is not a timeout, re-raise the exception
-    raise Exception("Max retries reached for document analysis")
+# def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=10):
+#     retry_count = 0
+#     delay = initial_delay
+#     while retry_count < max_retries:
+#         try:
+#             poller = document_analysis_client.begin_analyze_document_from_url(
+#                 "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
+#             )
+#             result = poller.result()
+#             return result  # If successful, return the result
+#         except HttpResponseError as e:
+#             if e.status_code == 408:  # Check if the error is a timeout
+#                 logging.warning(f"Request timed out. Retrying {retry_count + 1}/{max_retries}...")
+#                 time.sleep(delay)  # Wait before retrying
+#                 delay *= 3  # Exponential backoff
+#                 retry_count += 1
+#             else:
+#                 raise  # If the error is not a timeout, re-raise the exception
+#     raise Exception("Max retries reached for document analysis")
 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
@@ -1635,7 +1639,12 @@ async def get_formula():
                 total_page_characters = 0
                 time.sleep(5)
                 logging.info(f"Page {index} ({url}) start analyzing.")
-                result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+                # result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+                poller = document_analysis_client.begin_analyze_document_from_url(
+                    "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
+                )
+                time.sleep(5)
+                result = poller.result()
                 logging.info(f"Page {index} ({url}) successfully analyzed.")
                 if len(result.pages[0].words)>0:
                     content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
