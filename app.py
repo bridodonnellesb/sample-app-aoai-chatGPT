@@ -1493,7 +1493,6 @@ def screenshot_formula(url, formula_filepath, points):
         image_stream = BytesIO()
         cropped_image.save(image_stream, format='JPEG') 
         image_stream.seek(0) 
-        time.sleep(5)
         logging.info("Saving image to blob storage")
         content_settings = ContentSettings(content_type="image/jpeg")
         blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
