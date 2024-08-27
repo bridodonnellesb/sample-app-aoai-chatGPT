@@ -1624,9 +1624,9 @@ async def get_formula():
         blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
         logging.info(f"{len(values)} pages received for Document {blob_container}")
         for page_number, item in enumerate(values): # going through the pages
-            logging.info(f"Starting Page {page_number} ({url})")
             url = item["data"]["image"]["url"]
             image_data = item["data"]["image"]["data"]
+            logging.info(f"Starting Page {page_number} ({url})")
             image_bytes = base64.b64decode(image_data)
             formulas_output =[]
             offsets=[]
