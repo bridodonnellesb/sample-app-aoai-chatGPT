@@ -22,7 +22,8 @@ from quart import (
     send_from_directory,
     render_template,
 )
-
+from docx import Document
+import xml.etree.ElementTree as ET
 from azure.core.exceptions import HttpResponseError
 from PIL import Image
 from azure.core.credentials import AzureKeyCredential
@@ -1428,6 +1429,77 @@ def calculate_page_number(midpoint_offset, page_list):
             return page["Page"]
     return None  # Return None if no page matches
 
+@bp.route("/skillset/image_offsets", methods=["POST"]) 
+async def calculate_image_offset():
+    try:
+        request_json = await request.get_json()
+        values = request_json.get("values", None)
+        reponse_array = []
+        for item in values:
+            url = item["data"]["url"]
+            response = requests.get(url)
+            if response.status_code ==200:
+                doc = Document(BytesIO(response.content))
+                root = ET.fromstring(doc._element.xml)
+        
+                offsets = []
+                current_text = ""
+                count_characters = 0
+        
+                for elem in root.iter():
+                    # Check if the element is a text element with the correct tag
+                    if elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t':
+                        current_text += elem.text
+                        count_characters += len(elem.text)
+                    # Check if the element is a drawing element
+                    elif elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing':
+                        # If we encounter a drawing tag, we save the current text block and reset the text and counter
+                        if current_text:
+                            offsets.append(count_characters)
+                            current_text = ""
+
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "image_offsets": offsets
+                },
+                "errors": None,
+                "warnings": None
+            }
+            reponse_array.append(output)
+        response = jsonify({"values":reponse_array})
+        return response, 200  # Status code should be 200 for success
+    except Exception as e:
+        logging.exception("Exception in /skillset/image_offsets")
+        exception = str(e)
+        return jsonify({"error": exception}), 500
+
+@bp.route("/skillset/image_urls", methods=["POST"]) 
+async def creating_insert_text():
+    try:
+        request_json = await request.get_json()
+        values = request_json.get("values", None)
+        reponse_array = []
+        for item in values: # going through each document
+            urls = item["data"]["urls"]
+            insert_text = [f"![]({url})" for url in urls]   
+
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "image_offsets": insert_text
+                },
+                "errors": None,
+                "warnings": None
+            }
+            reponse_array.append(output)
+        response = jsonify({"values":reponse_array})
+        return response, 200  # Status code should be 200 for success
+    except Exception as e:
+        logging.exception("Exception in /skillset/image_urls")
+        exception = str(e)
+        return jsonify({"error": exception}), 500
+
 @bp.route("/skillset/page", methods=["POST"]) 
 async def get_page_number():
     try:
@@ -1586,27 +1658,6 @@ def get_relevant_formula(url, result, width):
         # Filter formulas that have a significant width
         if get_x_length(f.polygon) > width
     ]
-
-# Define a function to perform the analysis with retries
-# def analyze_document_with_retries(document_analysis_client, url_with_sas, max_retries=3, initial_delay=10):
-#     retry_count = 0
-#     delay = initial_delay
-#     while retry_count < max_retries:
-#         try:
-#             poller = document_analysis_client.begin_analyze_document_from_url(
-#                 "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
-#             )
-#             result = poller.result()
-#             return result  # If successful, return the result
-#         except HttpResponseError as e:
-#             if e.status_code == 408:  # Check if the error is a timeout
-#                 logging.warning(f"Request timed out. Retrying {retry_count + 1}/{max_retries}...")
-#                 time.sleep(delay)  # Wait before retrying
-#                 delay *= 3  # Exponential backoff
-#                 retry_count += 1
-#             else:
-#                 raise  # If the error is not a timeout, re-raise the exception
-#     raise Exception("Max retries reached for document analysis")
 
 @bp.route("/skillset/formula", methods=["POST"])
 async def get_formula():
