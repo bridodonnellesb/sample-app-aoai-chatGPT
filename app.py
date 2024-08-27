@@ -1477,13 +1477,10 @@ async def get_page_number():
 class FormulaProcessingError(Exception):
     pass
 
-def screenshot_formula(url, formula_filepath, points):
+def screenshot_formula(image_bytes, formula_filepath, points):
     try:
         blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-        logging.info("Requesting Image")
-        response=requests.get(url, timeout=30)
-        logging.info("Successfully accessed image")
-        image = Image.open(BytesIO(response.content))
+        image = Image.open(BytesIO(image_bytes))
         x1, y1 = points[0].x, points[0].y
         x2, y2 = points[2].x, points[2].y
         x1 -= 10
@@ -1624,82 +1621,72 @@ async def get_formula():
         )
         errors = None
         warnings = None
-        logging.info(f"{len(values)} documents received.")
-        for document_number, item in enumerate(values): # going through the documents
-            urls = item["data"]["url"]
-            texts = item["data"]["text"]
-            logging.info(f"Document {document_number} has {len(urls)} pages")
-            document_pages = []
-            for index, url in enumerate(urls): # going each page of a document
-                logging.info(f"Starting Page {index} ({url}) for Document {document_number}")
-                url_with_sas = f"{url}?{generate_SAS(url)}"
-                formulas_output =[]
-                offsets=[]
-                total_page_characters = 0
-                time.sleep(5)
-                logging.info(f"Page {index} ({url}) start analyzing.")
-                # result = analyze_document_with_retries(document_analysis_client, url_with_sas)
-                poller = document_analysis_client.begin_analyze_document_from_url(
-                    "prebuilt-read", document_url=url_with_sas, features=[AnalysisFeature.FORMULAS]
-                )
-                time.sleep(5)
-                result = poller.result()
-                logging.info(f"Page {index} ({url}) successfully analyzed.")
-                if len(result.pages[0].words)>0:
-                    content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                    formulas = get_relevant_formula(url, result, 50)
-                    combined_formulas = []
-                    polygons = []
-                    for i, formula in enumerate(formulas):
-                        current_poly = formula["polygon"]
-                        polygons.append(current_poly)
-                            # Check if we should combine polygons or if we are at the last formula
-                        is_last_formula = i == len(formulas) - 1
-                        is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+        blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
+        logging.info(f"{len(values)} pages received for Document {blob_container}")
+        for page_number, item in enumerate(values): # going through the pages
+            logging.info(f"Starting Page {page_number} ({url})")
+            url = item["data"]["image"]["url"]
+            image_data = item["data"]["image"]["data"]
+            image_bytes = base64.b64decode(image_data)
+            formulas_output =[]
+            offsets=[]
+            total_page_characters = 0
+            logging.info(f"Page {page_number} ({url}) start analyzing.")
+            # result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+            poller = document_analysis_client.begin_analyze_document(
+                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+            )
+            result = poller.result()
+            logging.info(f"Page {page_number} ({url}) successfully analyzed.")
+            if len(result.pages[0].words)>0:
+                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+                formulas = get_relevant_formula(url, result, 50)
+                combined_formulas = []
+                polygons = []
+                for i, formula in enumerate(formulas):
+                    current_poly = formula["polygon"]
+                    polygons.append(current_poly)
+                    # Check if we should combine polygons or if we are at the last formula
+                    is_last_formula = i == len(formulas) - 1
+                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                        if is_far_enough:
-                            combined_polygon = get_combined_polygon(polygons)
-                            formula["polygon"] = combined_polygon
-                            combined_formulas.append(formula)
-                            logging.info(f"Saving screenshot from Page {index} ({url})")
-                            screenshot_formula(url_with_sas, formula["content"], combined_polygon)
-                            logging.info(f"Successfully saved screenshot from Page {index} ({url})")
-                            polygons = []  # Reset polygons for the next group
-                    # Insert formulas into the reading order
-                    logging.info("Inserting formulas into reading order")
-                    for formula in combined_formulas:
-                        content = insert_in_reading_order(content, formula)
-                    logging.info("Successfully inserted formulas into reading order")
+                    if is_far_enough:
+                        combined_polygon = get_combined_polygon(polygons)
+                        formula["polygon"] = combined_polygon
+                        combined_formulas.append(formula)
+                        logging.info(f"Saving screenshot from Page {index} ({url})")
+                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
+                        logging.info(f"Successfully saved screenshot from Page {index} ({url})")
+                        polygons = []  # Reset polygons for the next group
+                # Insert formulas into the reading order
+                logging.info("Inserting formulas into reading order")
+                for formula in combined_formulas:
+                    content = insert_in_reading_order(content, formula)
+                logging.info("Successfully inserted formulas into reading order")
 
-                    # Update offsets and output
-                    for obj in content:
-                        if obj["type"]=="formula":
-                            logging.info("Appending character offsets and url")
-                            offsets.append(total_page_characters)
-                            formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
-                            logging.info("Successfully appended character offsets and url")
-                        else:
-                            total_page_characters += (len(obj["content"])+1)
-
-                page_data = {
-                    "text":texts[index],
-                    "formula":formulas_output,
-                    "offset":offsets
-                }
-                document_pages.append(page_data)
-                logging.info(f"Completed Page {index} ({url}) for Document {document_number}")
+                # Update offsets and output
+                for obj in content:
+                    if obj["type"]=="formula":
+                        logging.info("Appending character offsets and url")
+                        offsets.append(total_page_characters)
+                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        logging.info("Successfully appended character offsets and url")
+                    else:
+                        total_page_characters += (len(obj["content"])+1)
+        
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "images":document_pages
+                    "formula": formulas_output,
+                    "offset": offsets
                 },
                 "errors": errors,
                 "warnings": warnings
             }
             response_array.append(output)
-            logging.info(f"Completed Document {document_number}")
+            logging.info(f"Completed Page {page_number} ({url})")
         response = jsonify({"values":response_array})
-        logging.info("Completed request")
+        logging.info("Completed request for Document {blob_container}")
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
