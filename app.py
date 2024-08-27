@@ -1435,10 +1435,12 @@ async def calculate_image_offset():
         request_json = await request.get_json()
         values = request_json.get("values", None)
         reponse_array = []
-        for item in values:
+        for item in values: # going through each document
+            logging.info("Getting offsets for Document URL")
             url = item["data"]["url"]
-            response = requests.get(url)
+            response = requests.get(f"{url}?{generate_SAS(url)}")
             if response.status_code ==200:
+                logging.info("Document successfully fetched")
                 doc = Document(BytesIO(response.content))
                 root = ET.fromstring(doc._element.xml)
         
@@ -1457,6 +1459,7 @@ async def calculate_image_offset():
                         if current_text:
                             offsets.append(count_characters)
                             current_text = ""
+                logging.info(f"{len(offsets)} images found.")
 
             output={
                 "recordId": item['recordId'],
@@ -1481,6 +1484,7 @@ async def creating_insert_text():
         values = request_json.get("values", None)
         reponse_array = []
         for item in values: # going through each document
+            logging.info(f"Getting urls for Document {item['recordId']}")
             urls = item["data"]["urls"]
             insert_text = [f"![]({url})" for url in urls]   
 
@@ -1493,6 +1497,7 @@ async def creating_insert_text():
                 "warnings": None
             }
             reponse_array.append(output)
+            logging.info(f"{len(urls)} Image Urls extracted for Document {item["recordId"]} completed")
         response = jsonify({"values":reponse_array})
         return response, 200  # Status code should be 200 for success
     except Exception as e:
