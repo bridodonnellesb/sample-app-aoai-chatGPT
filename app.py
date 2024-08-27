@@ -1487,7 +1487,7 @@ async def creating_insert_text():
             output={
                 "recordId": item['recordId'],
                 "data": {
-                    "image_offsets": insert_text
+                    "image_urls": insert_text
                 },
                 "errors": None,
                 "warnings": None

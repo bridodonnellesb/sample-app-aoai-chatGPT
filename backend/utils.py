@@ -111,6 +111,24 @@ def split_url(url):
     blob = match.group(2)
     return container, blob
 
+def append_SAS_to_image_link(content):
+    pattern = r'!\[(.*?)\]\((.*?)\)'
+    def url_replacer(match):
+        original_url = match.group(2)
+        generated_string = generate_SAS(original_url)
+        return f"![{match.group(1)}]({original_url}?{generated_string})"
+    replaced_text = re.sub(pattern, url_replacer, content)
+    return replaced_text
+
+def remove_SAS_from_image_link(content):    
+    pattern = r'!\[(.*?)\]\((.*?)\)'
+    def url_replacer(match):
+        original_url = match.group(2)
+        url_cleaned = remove_SAS_token(original_url)
+        return f"![{match.group(1)}]({url_cleaned})"
+    replaced_text = re.sub(pattern, url_replacer, content)
+    return replaced_text
+
 def format_non_streaming_response(chatCompletion, history_metadata, apim_request_id):
     response_obj = {
         "id": chatCompletion.id,
@@ -138,7 +156,7 @@ def format_non_streaming_response(chatCompletion, history_metadata, apim_request
             response_obj["choices"][0]["messages"].append(
                 {
                     "role": "assistant",
-                    "content": message.content,
+                    "content": append_SAS_to_image_link(message.content),
                 }
             )
             return response_obj
