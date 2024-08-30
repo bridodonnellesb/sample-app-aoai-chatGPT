@@ -1497,7 +1497,7 @@ async def creating_insert_text():
                 "warnings": None
             }
             reponse_array.append(output)
-            logging.info(f"{len(urls)} Image Urls extracted for Document {item["recordId"]} completed")
+            logging.info(f"{len(urls)} Image Urls extracted")
         response = jsonify({"values":reponse_array})
         return response, 200  # Status code should be 200 for success
     except Exception as e:
