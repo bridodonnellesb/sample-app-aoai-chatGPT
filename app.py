@@ -1443,7 +1443,8 @@ async def calculate_image_offset():
                 logging.info("Document successfully fetched")
                 doc = Document(BytesIO(response.content))
                 root = ET.fromstring(doc._element.xml)
-        
+                
+                logging.info("XML successfully extracted")
                 offsets = []
                 current_text = ""
                 count_characters = 0
