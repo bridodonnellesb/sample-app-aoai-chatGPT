@@ -1455,7 +1455,14 @@ async def calculate_image_offset():
                     # Check if the element is a drawing element
                     elif elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing':
                         # If we encounter a drawing tag, we save the current text block and reset the text and counter
-                        offsets.append(count_characters)
+                        # offsets.append(count_characters)
+                        extent_elem = elem.find('.//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}extent')
+                        if extent_elem is not None:
+                            cy_value = int(extent_elem.get('cy', '0'))
+                            logging.info(f"Image has height of {cy_value}.")
+                            if cy_value > 350000:
+                                offsets.append(count_characters)
+ 
                 logging.info(f"{len(offsets)} images found.")
 
             output={
