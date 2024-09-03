@@ -1446,20 +1446,16 @@ async def calculate_image_offset():
                 
                 logging.info("XML successfully extracted")
                 offsets = []
-                current_text = ""
                 count_characters = 0
         
                 for elem in root.iter():
                     # Check if the element is a text element with the correct tag
                     if elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t':
-                        current_text += elem.text
                         count_characters += len(elem.text)
                     # Check if the element is a drawing element
                     elif elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}drawing':
                         # If we encounter a drawing tag, we save the current text block and reset the text and counter
-                        if current_text:
-                            offsets.append(count_characters)
-                            current_text = ""
+                        offsets.append(count_characters)
                 logging.info(f"{len(offsets)} images found.")
 
             output={
