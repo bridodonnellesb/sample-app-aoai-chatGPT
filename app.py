@@ -1447,6 +1447,7 @@ async def calculate_image_offset():
                 logging.info("XML successfully extracted")
                 offsets = []
                 count_characters = 0
+                dpi = 96
         
                 for elem in root.iter():
                     # Check if the element is a text element with the correct tag
@@ -1459,8 +1460,11 @@ async def calculate_image_offset():
                         extent_elem = elem.find('.//{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}extent')
                         if extent_elem is not None:
                             cy_value = int(extent_elem.get('cy', '0'))
-                            logging.info(f"Image has height of {cy_value}.")
-                            if cy_value > 350000:
+                            height_pixel = (cy_value / 914400)*dpi
+                            cx_value = int(extent_elem.get('cx', '0'))
+                            width_pixel = (cx_value / 914400)*dpi
+                            if height_pixel > 50 and width_pixel > 50:
+                                logging.info("Including Image")
                                 offsets.append(count_characters)
  
                 logging.info(f"{len(offsets)} images found.")
