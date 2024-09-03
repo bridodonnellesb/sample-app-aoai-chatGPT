@@ -1463,7 +1463,7 @@ async def calculate_image_offset():
                             height_pixel = (cy_value / 914400)*dpi
                             cx_value = int(extent_elem.get('cx', '0'))
                             width_pixel = (cx_value / 914400)*dpi
-                            if height_pixel > 30 and width_pixel > 30:
+                            if height_pixel > 35 and width_pixel > 35:
                                 logging.info("Including Image")
                                 offsets.append(count_characters)
  
