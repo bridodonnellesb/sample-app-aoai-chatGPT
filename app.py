@@ -92,6 +92,7 @@ BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
 FORMULA_IMAGE_CONTAINER = os.environ.get("FORMULA_IMAGE_CONTAINER")
 PAGE_IMAGE_CONTAINER = os.environ.get("PAGE_IMAGE_CONTAINER")
 PDF_CONTAINER = os.environ.get("PDF_CONTAINER")
+LOCAL_TEMP_DIR = os.environ.get("LOCAL_TEMP_DIR")
 
 def create_app():
     app = Quart(__name__)
@@ -1781,11 +1782,10 @@ async def get_formula():
  
 def get_images_from_file(blob_service_client, url):
     original_container, blob = split_url(url)
-    local_dir = './Sample_Files/'
-    temp_doc_path = f'{local_dir}{blob}'
+    temp_doc_path = f'{LOCAL_TEMP_DIR}{blob}'
     download_file(blob_service_client, url, temp_doc_path)
     text_with_subscript = extract_text_with_subscript(temp_doc_path)
-    images, blob_name = convert_docx_to_images(blob_service_client, temp_doc_path, local_dir)
+    images, blob_name = convert_docx_to_images(blob_service_client, temp_doc_path, LOCAL_TEMP_DIR)
     os.remove(temp_doc_path)
     print("Removed docx from local machine.")
     return images, text_with_subscript, f'{BLOB_ACCOUNT}/{PDF_CONTAINER}/{blob_name}'
