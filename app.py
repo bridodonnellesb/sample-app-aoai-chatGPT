@@ -1783,8 +1783,10 @@ async def get_formula():
 def get_images_from_file(blob_service_client, url):
     original_container, blob = split_url(url)
     temp_doc_path = f'{LOCAL_TEMP_DIR}{blob}'
-    download_file(blob_service_client, url, temp_doc_path)
-    text_with_subscript = extract_text_with_subscript(temp_doc_path)
+    text_with_subscript=""
+    if ".docx" in blob:
+        download_file(blob_service_client, url, temp_doc_path)
+        text_with_subscript = extract_text_with_subscript(temp_doc_path)
     images, blob_name = convert_docx_to_images(blob_service_client, temp_doc_path, LOCAL_TEMP_DIR)
     os.remove(temp_doc_path)
     print("Removed docx from local machine.")

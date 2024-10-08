@@ -268,12 +268,12 @@ def insert_subscripts(docx_text, ocr_text):
     for ocr_variation, correct_word in mapping.items():
         ocr_text = re.sub(r'\b' + re.escape(ocr_variation) + r'\b', correct_word, ocr_text)
  
-    return ocr_text, subscript_matches
+    return ocr_text
  
 def clean_ocr_text(docx_text, ocr_text):
     ocr_with_greek_letters = fix_greek_letters(docx_text, ocr_text)
     print("Added greek characters to OCR text")
-    cleaned_ocr_text, subscript_matches = insert_subscripts(docx_text, ocr_with_greek_letters)
+    cleaned_ocr_text = insert_subscripts(docx_text, ocr_with_greek_letters)
     print("Added subscript tags to OCR text")
     return cleaned_ocr_text
 
