@@ -81,10 +81,13 @@ def docx_to_pdf_name(filepath):
     return file_name.replace("docx","pdf")
  
 def convert_docx_to_pdf(blob_service_client, doc_path, output_dir):
-    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', output_dir])
-    print(f"Converted '{doc_path}' to PDF successfully.")
+    # subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', output_dir])
+    # print(f"Converted '{doc_path}' to PDF successfully.")
+    # upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name)
     blob_name = docx_to_pdf_name(doc_path)
-    upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name)
+    url = f'{BLOB_ACCOUNT}/{PDF_CONTAINER}/{blob_name}'
+    local_filename = f'{output_dir}blob_name'
+    download_file(blob_service_client, url, local_filename)
     return blob_name
    
 def extract_text_with_subscript(doc_path):
