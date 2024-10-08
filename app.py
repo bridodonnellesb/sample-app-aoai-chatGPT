@@ -1801,14 +1801,14 @@ async def get_page_images():
         response_array = []
         for item in values:
             url = item["data"]["url"]
-            images, docx_text = get_images_from_file(blob_service_client, url)
+            images, docx_text, pdf = get_images_from_file(blob_service_client, url)
 
             output={
                 "recordId": item['recordId'],
                 "data": {
                     "images": images,
                     "docx_text": docx_text,
-                    "pdf":pdf
+                    "pdf_url":pdf
                 },
                 "errors": None,
                 "warnings": None
