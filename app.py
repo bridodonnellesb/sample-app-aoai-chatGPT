@@ -5,7 +5,6 @@ import logging
 import uuid
 from itertools import combinations
 from dotenv import load_dotenv
-from azure.core.exceptions import AzureError
 import httpx
 import requests
 import base64
@@ -24,18 +23,21 @@ from quart import (
 )
 from docx import Document
 import xml.etree.ElementTree as ET
-from azure.core.exceptions import HttpResponseError
 from PIL import Image
-from azure.core.credentials import AzureKeyCredential
-from azure.ai.formrecognizer import DocumentAnalysisClient, AnalysisFeature
 from math import sqrt
 import re
-from azure.identity import DefaultAzureCredential
-from azure.storage.blob import BlobServiceClient, ContentSettings
 from io import BytesIO
 
-from openai import AsyncAzureOpenAI
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobServiceClient, ContentSettings
+from azure.core.exceptions import HttpResponseError
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.formrecognizer import DocumentAnalysisClient, AnalysisFeature
+from azure.core.exceptions import AzureError
 from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+
+from openai import AsyncAzureOpenAI
+
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
@@ -50,6 +52,16 @@ from backend.utils import (
     remove_SAS_token,
     generate_SAS,
     split_url
+)
+
+from backend.skill_utils import (
+    get_relevant_formula,
+    screenshot_formula,
+    overwrite_words_with_formulas,
+    clean_ocr_text,
+    download_file,
+    extract_text_with_subscript,
+    convert_docx_to_images
 )
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
@@ -77,7 +89,9 @@ DOCUMENT_INTELLIGENCE_KEY = os.environ.get("DOCUMENT_INTELLIGENCE_KEY")
 # Blob Storage
 BLOB_CREDENTIAL = os.environ.get("BLOB_CREDENTIAL")
 BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
-BLOB_CONTAINER = os.environ.get("BLOB_CONTAINER")
+FORMULA_IMAGE_CONTAINER = os.environ.get("FORMULA_IMAGE_CONTAINER")
+PAGE_IMAGE_CONTAINER = os.environ.get("PAGE_IMAGE_CONTAINER")
+PDF_CONTAINER = os.environ.get("PDF_CONTAINER")
 
 def create_app():
     app = Quart(__name__)
@@ -1423,12 +1437,6 @@ async def generate_title(conversation_messages):
     except Exception as e:
         return messages[-2]["content"]
 
-def calculate_page_number(midpoint_offset, page_list):
-    for page in page_list:
-        if page["Start"] <= midpoint_offset <= page["End"]:
-            return page["Page"]
-    return None  # Return None if no page matches
-
 @bp.route("/skillset/image_offsets", methods=["POST"]) 
 async def calculate_image_offset():
     try:
@@ -1513,6 +1521,12 @@ async def creating_insert_text():
         exception = str(e)
         return jsonify({"error": exception}), 500
 
+def calculate_page_number(midpoint_offset, page_list):
+    for page in page_list:
+        if page["Start"] <= midpoint_offset <= page["End"]:
+            return page["Page"]
+    return None  # Return None if no page matches
+
 @bp.route("/skillset/page", methods=["POST"]) 
 async def get_page_number():
     try:
@@ -1577,7 +1591,7 @@ def screenshot_formula(image_bytes, formula_filepath, points):
         image_stream.seek(0) 
         logging.info("Saving image to blob storage")
         content_settings = ContentSettings(content_type="image/jpeg")
-        blob_client = blob_service_client.get_blob_client(container=BLOB_CONTAINER, blob=formula_filepath)
+        blob_client = blob_service_client.get_blob_client(container=FORMULA_IMAGE_CONTAINER, blob=formula_filepath)
         blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
         logging.info("Successfully saved image to blob storage")
     except Exception as e:
@@ -1685,8 +1699,8 @@ async def get_formula():
         )
         errors = None
         warnings = None
-        blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
-        logging.info(f"{len(values)} pages received for Document {blob_container}")
+        document_blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
+        logging.info(f"{len(values)} pages received for Document {document_blob_container}")
         for page_number, item in enumerate(values): # going through the pages
             url = item["data"]["image"]["url"]
             image_data = item["data"]["image"]["data"]
@@ -1733,7 +1747,7 @@ async def get_formula():
                     if obj["type"]=="formula":
                         logging.info("Appending character offsets and url")
                         offsets.append(total_page_characters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{BLOB_CONTAINER}/{obj["content"]})')
+                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{FORMULA_IMAGE_CONTAINER}/{obj["content"]})')
                         logging.info("Successfully appended character offsets and url")
                     else:
                         total_page_characters += (len(obj["content"])+1)
@@ -1750,7 +1764,7 @@ async def get_formula():
             response_array.append(output)
             logging.info(f"Completed Page {page_number} ({url})")
         response = jsonify({"values":response_array})
-        logging.info("Completed request for Document {blob_container}")
+        logging.info("Completed request for Document {document_blob_container}")
         return response, 200  # Status code should be 200 for success
     except HttpResponseError as hre:
         logging.exception("HttpResponseError in /skillset/formula")
@@ -1765,5 +1779,101 @@ async def get_formula():
         logging.exception("Unexpected exception in /skillset/formula")
         return jsonify({"Unexpected error": str(e)}), 500
  
+def get_images_from_file(blob_service_client, url):
+    original_container, blob = split_url(url)
+    local_dir = './Sample_Files/'
+    temp_doc_path = f'{local_dir}{blob}'
+    download_file(blob_service_client, url, temp_doc_path)
+    text_with_subscript = extract_text_with_subscript(temp_doc_path)
+    images, blob_name = convert_docx_to_images(blob_service_client, temp_doc_path, local_dir)
+    os.remove(temp_doc_path)
+    print("Removed docx from local machine.")
+    return images, text_with_subscript, f'{BLOB_ACCOUNT}/{PDF_CONTAINER}/{blob_name}'
+
+@bp.route("/skillset/page_images", methods=["POST"])
+async def get_page_images():
+    try:
+        request_json = await request.get_json()
+        if not request_json or "values" not in request_json:
+            raise ValueError("Invalid request payload")
+        values = request_json.get("values", None)
+        blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
+        response_array = []
+        for item in values:
+            url = item["data"]["url"]
+            images, docx_text = get_images_from_file(blob_service_client, url)
+
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "images": images,
+                    "docx_text": docx_text,
+                    "pdf":pdf
+                },
+                "errors": None,
+                "warnings": None
+            }
+            response_array.append(output)
+        response = jsonify({"values":response_array})
+        return response, 200  # Status code should be 200 for success
+    except Exception as e:
+        logging.exception("Unexpected exception in /skillset/page_images")
+        return jsonify({"Unexpected error": str(e)}), 500
+
+def get_cleaned_up_text(blob_service_client, document_analysis_client, image_url, docx_text):
+    blob_container, blob_name = split_url(image_url)
+    image_blob_client = blob_service_client.get_blob_client(container = blob_container, blob =blob_name)
+    downloader = image_blob_client.download_blob()
+    image_bytes = downloader.readall()
+    poller = document_analysis_client.begin_analyze_document(
+        "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+    )
+    result = poller.result()
+ 
+    if len(result.pages[0].words)>0:
+        content = result.pages[0].words
+        formulas = get_relevant_formula(image_url, result)
+        for i, formula in enumerate(formulas):
+            screenshot_formula(blob_service_client, image_bytes, formula.content, formula.polygon)
+            formula.content=f'![]({BLOB_ACCOUNT}/{FORMULA_IMAGE_CONTAINER}/{formula.content}'
+ 
+        updated_content = overwrite_words_with_formulas(content, formulas)
+ 
+    ocr_text = " ".join(item.content for item in updated_content)
+    final_text = clean_ocr_text(docx_text, ocr_text)
+    return final_text
+
+@bp.route("/skillset/clean_text", methods=["POST"])
+async def extract_page_images():
+    try:
+        request_json = await request.get_json()
+        if not request_json or "values" not in request_json:
+            raise ValueError("Invalid request payload")
+        values = request_json.get("values", None)
+        blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
+        document_analysis_client = DocumentAnalysisClient(
+            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT,
+            credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+        )
+        response_array = []
+        for item in values:
+            image_url = item["data"]["url"]
+            docx_text = item["data"]["docx_text"]
+            final_text = get_cleaned_up_text(blob_service_client, document_analysis_client, image_url, docx_text)
+
+            output={
+                "recordId": item['recordId'],
+                "data": {
+                    "text": final_text
+                },
+                "errors": None,
+                "warnings": None
+            }
+            response_array.append(output)
+        response = jsonify({"values":response_array})
+        return response, 200  # Status code should be 200 for success
+    except Exception as e:
+        logging.exception("Unexpected exception in /skillset/clean_text")
+        return jsonify({"Unexpected error": str(e)}), 500
 
 app = create_app()
