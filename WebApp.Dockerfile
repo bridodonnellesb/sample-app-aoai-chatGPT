@@ -22,6 +22,10 @@ RUN apk add --no-cache --virtual .build-deps \
     libreoffice \
     ttf-freefont
     
+
+RUN echo $PATH
+RUN which pdftotext
+
 COPY requirements.txt /usr/src/app/  
 RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt \  
     && rm -rf /root/.cache  
