@@ -119,7 +119,7 @@ def extract_text_with_subscript(doc_path):
     return extracted_text
  
 def convert_docx_to_images(blob_service_client, doc_path, output_dir):
-    blob_name = convert_docx_to_pdf(blob_service_client, doc_path, output_dir)
+    blob_name = convert_docx_to_pdf(blob_service_client, doc_path)
     file_name = blob_name.replace(".pdf","")
     pdf_path = f'{output_dir}{blob_name}'
     # Convert PDF to a list of images
