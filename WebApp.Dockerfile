@@ -19,8 +19,9 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk add --no-cache \  
     libpq \
     poppler-utils \
-    libreoffice \
     ttf-freefont
+
+RUN apk add --no-cache libreoffice
 
 COPY requirements.txt /usr/src/app/  
 RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt \  
