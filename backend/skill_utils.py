@@ -38,9 +38,9 @@ def download_file(blob_service_client, url):
     local_filename = f'{LOCAL_TEMP_DIR}{blob_name}'
     blob_client = blob_service_client.get_blob_client(container=blob_container, blob=blob_name)
     try:
-        with open(local_filename, "wb") as download_file:
+        with open(local_filename, "wb") as downloaded_file:
             download_stream = blob_client.download_blob()
-            download_file.write(download_stream.readall())
+            downloaded_file.write(download_stream.readall())
         print("Downloaded Word Document")
     except ResourceNotFoundError:
         print("The specified blob does not exist.")
