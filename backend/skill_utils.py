@@ -31,9 +31,11 @@ BLOB_ACCOUNT = os.environ.get("BLOB_ACCOUNT")
 FORMULA_IMAGE_CONTAINER = os.environ.get("FORMULA_IMAGE_CONTAINER")
 PAGE_IMAGE_CONTAINER = os.environ.get("PAGE_IMAGE_CONTAINER")
 PDF_CONTAINER = os.environ.get("PDF_CONTAINER")
+LOCAL_TEMP_DIR = os.environ.get("LOCAL_TEMP_DIR")
  
-def download_file(blob_service_client, url, local_filename):
+def download_file(blob_service_client, url):
     blob_container, blob_name = split_url(url)
+    local_filename = f'{LOCAL_TEMP_DIR}{blob_name}'
     blob_client = blob_service_client.get_blob_client(container=blob_container, blob=blob_name)
     try:
         with open(local_filename, "wb") as download_file:
@@ -80,14 +82,11 @@ def docx_to_pdf_name(filepath):
     file_name = os.path.basename(filepath)
     return file_name.replace("docx","pdf")
  
-def convert_docx_to_pdf(blob_service_client, doc_path, output_dir):
-    # subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', output_dir])
-    # print(f"Converted '{doc_path}' to PDF successfully.")
-    # upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name)
+def convert_docx_to_pdf(blob_service_client, doc_path):
+    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', LOCAL_TEMP_DIR])
+    print(f"Converted '{doc_path}' to PDF successfully.")
     blob_name = docx_to_pdf_name(doc_path)
-    url = f'{BLOB_ACCOUNT}/{PDF_CONTAINER}/{blob_name}'
-    local_filename = f'{output_dir}blob_name'
-    download_file(blob_service_client, url, local_filename)
+    upload_pdf_to_blob_storage(blob_service_client, LOCAL_TEMP_DIR, blob_name)
     return blob_name
    
 def extract_text_with_subscript(doc_path):
