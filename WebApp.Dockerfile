@@ -18,10 +18,11 @@ RUN apk add --no-cache --virtual .build-deps \
     curl \  
     && apk add --no-cache \  
     libpq \
-    poppler-utils \
-    ttf-freefont
-
-RUN apk update && apk add libreoffice
+    # Add LibreOffice dependencies
+    && apk add --no-cache libreoffice poppler-utils \
+    # Clean up unnecessary files and cache to reduce image size
+    && rm -rf /var/cache/apk/* \
+    && rm -rf /root/.cache
 
 COPY requirements.txt /usr/src/app/  
 RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt \  
