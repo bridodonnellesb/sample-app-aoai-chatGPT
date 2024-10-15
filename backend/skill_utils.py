@@ -49,19 +49,19 @@ def download_file(blob_service_client, url):
  
     return local_filename
  
-def upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name):
-    blob_client = blob_service_client.get_blob_client(container=PDF_CONTAINER, blob=blob_name)
-    with open(file=output_dir+blob_name, mode="rb") as data:
-        blob_client.upload_blob(data, overwrite=True)
-    properties = blob_client.get_blob_properties()
-    blob_headers = ContentSettings(content_type="application/pdf",
-                                content_encoding=properties.content_settings.content_encoding,
-                                content_language=properties.content_settings.content_language,
-                                content_disposition="inline",
-                                cache_control=properties.content_settings.cache_control,
-                                content_md5=properties.content_settings.content_md5)
-    blob_client.set_http_headers(blob_headers)
-    print(f"Uploaded {blob_name} to Blob Storage")
+# def upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name):
+#     blob_client = blob_service_client.get_blob_client(container=PDF_CONTAINER, blob=blob_name)
+#     with open(file=output_dir+blob_name, mode="rb") as data:
+#         blob_client.upload_blob(data, overwrite=True)
+#     properties = blob_client.get_blob_properties()
+#     blob_headers = ContentSettings(content_type="application/pdf",
+#                                 content_encoding=properties.content_settings.content_encoding,
+#                                 content_language=properties.content_settings.content_language,
+#                                 content_disposition="inline",
+#                                 cache_control=properties.content_settings.cache_control,
+#                                 content_md5=properties.content_settings.content_md5)
+#     blob_client.set_http_headers(blob_headers)
+#     print(f"Uploaded {blob_name} to Blob Storage")
  
  
 def upload_images_to_blob_storage(blob_service_client, img_byte_arr, image_blob_name):
@@ -82,12 +82,12 @@ def docx_to_pdf_name(filepath):
     file_name = os.path.basename(filepath)
     return file_name.replace("docx","pdf")
  
-def convert_docx_to_pdf(blob_service_client, doc_path):
-    subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', LOCAL_TEMP_DIR])
-    print(f"Converted '{doc_path}' to PDF successfully.")
-    blob_name = docx_to_pdf_name(doc_path)
-    upload_pdf_to_blob_storage(blob_service_client, LOCAL_TEMP_DIR, blob_name)
-    return blob_name
+# def convert_docx_to_pdf(blob_service_client, doc_path):
+#     subprocess.run(['libreoffice', '--headless', '--convert-to', 'pdf', doc_path, '--outdir', LOCAL_TEMP_DIR])
+#     print(f"Converted '{doc_path}' to PDF successfully.")
+#     blob_name = docx_to_pdf_name(doc_path)
+#     upload_pdf_to_blob_storage(blob_service_client, LOCAL_TEMP_DIR, blob_name)
+#     return blob_name
    
 def extract_text_with_subscript(doc_path):
     doc = Document(doc_path)
@@ -118,27 +118,27 @@ def extract_text_with_subscript(doc_path):
     print("Extracted subscript from word document.")
     return extracted_text
  
-def convert_docx_to_images(blob_service_client, doc_path, output_dir):
-    blob_name = convert_docx_to_pdf(blob_service_client, doc_path)
-    file_name = blob_name.replace(".pdf","")
-    pdf_path = f'{output_dir}{blob_name}'
-    # Convert PDF to a list of images
-    images = convert_from_path(pdf_path)
-    images_array = []
-    # Upload each image to Blob Storage
-    for i, image in enumerate(images):
-        # Convert image to bytes
-        img_byte_arr = BytesIO()
-        image.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()
-        # Create a new blob for the image
-        image_blob_name = f"{file_name}_page_{i+1}.png"
-        upload_images_to_blob_storage(blob_service_client, img_byte_arr, image_blob_name)
-        images_array.append(f"{BLOB_ACCOUNT}/{PAGE_IMAGE_CONTAINER}/{image_blob_name}")
-    print("Finished image upload.")
-    os.remove(pdf_path)
-    print("Removed PDF from local machine.")
-    return images_array, blob_name
+# def convert_docx_to_images(blob_service_client, doc_path, output_dir):
+#     blob_name = convert_docx_to_pdf(blob_service_client, doc_path)
+#     file_name = blob_name.replace(".pdf","")
+#     pdf_path = f'{output_dir}{blob_name}'
+#     # Convert PDF to a list of images
+#     images = convert_from_path(pdf_path)
+#     images_array = []
+#     # Upload each image to Blob Storage
+#     for i, image in enumerate(images):
+#         # Convert image to bytes
+#         img_byte_arr = BytesIO()
+#         image.save(img_byte_arr, format='PNG')
+#         img_byte_arr = img_byte_arr.getvalue()
+#         # Create a new blob for the image
+#         image_blob_name = f"{file_name}_page_{i+1}.png"
+#         upload_images_to_blob_storage(blob_service_client, img_byte_arr, image_blob_name)
+#         images_array.append(f"{BLOB_ACCOUNT}/{PAGE_IMAGE_CONTAINER}/{image_blob_name}")
+#     print("Finished image upload.")
+#     os.remove(pdf_path)
+#     print("Removed PDF from local machine.")
+#     return images_array, blob_name
 
 
 ############## Clean Text ##################
