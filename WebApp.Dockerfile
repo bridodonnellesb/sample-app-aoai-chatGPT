@@ -8,21 +8,17 @@ RUN npm ci
 COPY --chown=node:node ./frontend/ ./frontend  
 COPY --chown=node:node ./static/ ./static  
 WORKDIR /home/node/app/frontend
-RUN npm run build
+RUN NODE_OPTIONS=--max_old_space_size=8192 npm run build
   
-FROM python:3.11-slim 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev \
-    libssl-dev \
-    curl \
-    && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && apt-get install -y --no-install-recommends poppler-utils \
-    # Clean up unnecessary files and cache to reduce image size
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /root/.cache
+FROM python:3.11-alpine 
+RUN apk add --no-cache --virtual .build-deps \  
+    build-base \  
+    libffi-dev \  
+    openssl-dev \  
+    curl \  
+    && apk add --no-cache \  
+    libpq \
+    poppler-utils 
 
 COPY requirements.txt /usr/src/app/  
 RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt \  
