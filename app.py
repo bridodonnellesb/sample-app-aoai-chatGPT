@@ -1578,214 +1578,214 @@ async def get_page_number():
         exception = str(e)
         return jsonify({"error": exception}), 500
     
-class FormulaProcessingError(Exception):
-    pass
+# class FormulaProcessingError(Exception):
+#     pass
 
-def screenshot_formula(image_bytes, formula_filepath, points):
-    try:
-        blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
-        image = Image.open(BytesIO(image_bytes))
-        x1, y1 = points[0].x, points[0].y
-        x2, y2 = points[2].x, points[2].y
-        x1 -= 10
-        x2 += 10
-        y2 += 10
-        cropped_image = image.crop((x1, y1, x2, y2)) 
-        image_stream = BytesIO()
-        cropped_image.save(image_stream, format='JPEG') 
-        image_stream.seek(0) 
-        logging.info("Saving image to blob storage")
-        content_settings = ContentSettings(content_type="image/jpeg")
-        blob_client = blob_service_client.get_blob_client(container=FORMULA_IMAGE_CONTAINER, blob=formula_filepath)
-        blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
-        logging.info("Successfully saved image to blob storage")
-    except Exception as e:
-        logging.exception("Failed to process and upload screenshot")
-        raise FormulaProcessingError(f"Error processing screenshot for {formula_filepath}") from e
+# def screenshot_formula(image_bytes, formula_filepath, points):
+#     try:
+#         blob_service_client = BlobServiceClient(BLOB_ACCOUNT, credential=BLOB_CREDENTIAL)
+#         image = Image.open(BytesIO(image_bytes))
+#         x1, y1 = points[0].x, points[0].y
+#         x2, y2 = points[2].x, points[2].y
+#         x1 -= 10
+#         x2 += 10
+#         y2 += 10
+#         cropped_image = image.crop((x1, y1, x2, y2)) 
+#         image_stream = BytesIO()
+#         cropped_image.save(image_stream, format='JPEG') 
+#         image_stream.seek(0) 
+#         logging.info("Saving image to blob storage")
+#         content_settings = ContentSettings(content_type="image/jpeg")
+#         blob_client = blob_service_client.get_blob_client(container=FORMULA_IMAGE_CONTAINER, blob=formula_filepath)
+#         blob_client.upload_blob(image_stream.getvalue(), content_settings=content_settings, blob_type="BlockBlob", overwrite=True)
+#         logging.info("Successfully saved image to blob storage")
+#     except Exception as e:
+#         logging.exception("Failed to process and upload screenshot")
+#         raise FormulaProcessingError(f"Error processing screenshot for {formula_filepath}") from e
 
-class PolygonProcessingError(Exception):
-    pass
+# class PolygonProcessingError(Exception):
+#     pass
 
-def get_top_left(polygon):
-    try:
-        min_x = min(point.x for point in polygon)
-        min_y = min(point.y for point in polygon)
-        return min_x, min_y
-    except Exception as e:
-        raise PolygonProcessingError(f"Failed to get top left point of the polygon: {e}")
+# def get_top_left(polygon):
+#     try:
+#         min_x = min(point.x for point in polygon)
+#         min_y = min(point.y for point in polygon)
+#         return min_x, min_y
+#     except Exception as e:
+#         raise PolygonProcessingError(f"Failed to get top left point of the polygon: {e}")
 
-def compare_reading_order(polygon1, polygon2):
-    try:
-        point1_x, point1_y = get_top_left(polygon1)
-        point2_x, point2_y = get_top_left(polygon2)
-        if point1_y < point2_y:
-            return True
-        elif point1_y == point2_y and point1_x < point2_x:
-            return True
-        else:
-            return False
-    except PolygonProcessingError as e:
-        raise e
-    except Exception as e:
-        raise PolygonProcessingError(f"Failed to compare reading order of polygons: {e}")
+# def compare_reading_order(polygon1, polygon2):
+#     try:
+#         point1_x, point1_y = get_top_left(polygon1)
+#         point2_x, point2_y = get_top_left(polygon2)
+#         if point1_y < point2_y:
+#             return True
+#         elif point1_y == point2_y and point1_x < point2_x:
+#             return True
+#         else:
+#             return False
+#     except PolygonProcessingError as e:
+#         raise e
+#     except Exception as e:
+#         raise PolygonProcessingError(f"Failed to compare reading order of polygons: {e}")
 
-def insert_in_reading_order(array, formula):
-    try:
-        new_polygon = formula['polygon']
-        insert_index = 0
-        for i, item in enumerate(array):
-            if compare_reading_order(item['polygon'], new_polygon):
-                insert_index = i + 1
-        array.insert(insert_index, formula)
-        return array
-    except PolygonProcessingError as e:
-        raise e
-    except Exception as e:
-        raise PolygonProcessingError(f"Failed to insert formula in reading order: {e}")
+# def insert_in_reading_order(array, formula):
+#     try:
+#         new_polygon = formula['polygon']
+#         insert_index = 0
+#         for i, item in enumerate(array):
+#             if compare_reading_order(item['polygon'], new_polygon):
+#                 insert_index = i + 1
+#         array.insert(insert_index, formula)
+#         return array
+#     except PolygonProcessingError as e:
+#         raise e
+#     except Exception as e:
+#         raise PolygonProcessingError(f"Failed to insert formula in reading order: {e}")
 
 
-Point=namedtuple('Point',['x','y'])
+# Point=namedtuple('Point',['x','y'])
 
-def get_x_length(polygon):
-    x_coords = [point[0] for point in polygon]
-    min_x = min(x_coords)
-    max_x = max(x_coords)
-    length = max_x - min_x
-    return length
+# def get_x_length(polygon):
+#     x_coords = [point[0] for point in polygon]
+#     min_x = min(x_coords)
+#     max_x = max(x_coords)
+#     length = max_x - min_x
+#     return length
  
-def get_vertical_distance(top, bottom):
-    y_coords_top = [point[1] for point in top]
-    y_coords_bottom = [point[1] for point in bottom]
-    top_y = max(y_coords_top)
-    bottom_y = min(y_coords_bottom)
-    distance = bottom_y - top_y
-    return distance
+# def get_vertical_distance(top, bottom):
+#     y_coords_top = [point[1] for point in top]
+#     y_coords_bottom = [point[1] for point in bottom]
+#     top_y = max(y_coords_top)
+#     bottom_y = min(y_coords_bottom)
+#     distance = bottom_y - top_y
+#     return distance
  
-def get_combined_polygon(polygons):
-    x_coords = [point.x for poly in polygons for point in poly]
-    y_coords = [point.y for poly in polygons for point in poly]
-    top_left = Point(min(x_coords), min(y_coords))
-    top_right = Point(max(x_coords), min(y_coords))
-    bottom_right = Point(max(x_coords), max(y_coords))
-    bottom_left = Point(min(x_coords), max(y_coords))
-    return [top_left, top_right, bottom_right, bottom_left]
+# def get_combined_polygon(polygons):
+#     x_coords = [point.x for poly in polygons for point in poly]
+#     y_coords = [point.y for poly in polygons for point in poly]
+#     top_left = Point(min(x_coords), min(y_coords))
+#     top_right = Point(max(x_coords), min(y_coords))
+#     bottom_right = Point(max(x_coords), max(y_coords))
+#     bottom_left = Point(min(x_coords), max(y_coords))
+#     return [top_left, top_right, bottom_right, bottom_left]
 
-def generate_filename(url, id):    
-    pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
-    match = re.search(pattern, url)
-    identifier = str(uuid.uuid4())
-    if match:
-        file_source = match.group(2)
-        page_source = match.group(3)
-        identifier = f"{file_source}_{page_source}_{id}"
-    return f"formula_{identifier}.jpg"
+# def generate_filename(url, id):    
+#     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
+#     match = re.search(pattern, url)
+#     identifier = str(uuid.uuid4())
+#     if match:
+#         file_source = match.group(2)
+#         page_source = match.group(3)
+#         identifier = f"{file_source}_{page_source}_{id}"
+#     return f"formula_{identifier}.jpg"
 
-def get_relevant_formula(url, result, width):
-    if not result.pages[0].formulas:
-        return []
-    return [
-        {
-            "polygon":f.polygon, 
-            "content":generate_filename(url, formula_id), 
-            "type":"formula"
-        } 
-        for formula_id, f in enumerate(result.pages[0].formulas) 
-        # Filter formulas that have a significant width
-        if get_x_length(f.polygon) > width
-    ]
+# def get_relevant_formula(url, result, width):
+#     if not result.pages[0].formulas:
+#         return []
+#     return [
+#         {
+#             "polygon":f.polygon, 
+#             "content":generate_filename(url, formula_id), 
+#             "type":"formula"
+#         } 
+#         for formula_id, f in enumerate(result.pages[0].formulas) 
+#         # Filter formulas that have a significant width
+#         if get_x_length(f.polygon) > width
+#     ]
 
-@bp.route("/skillset/formula", methods=["POST"])
-async def get_formula():
-    try:
-        request_json = await request.get_json()
-        if not request_json or "values" not in request_json:
-            raise ValueError("Invalid request payload")
-        values = request_json.get("values", None)
-        response_array = []
-        document_analysis_client = DocumentAnalysisClient(
-            endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
-        )
-        errors = None
-        warnings = None
-        document_blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
-        logging.info(f"{len(values)} pages received for Document {document_blob_container}")
-        for page_number, item in enumerate(values): # going through the pages
-            url = item["data"]["image"]["url"]
-            image_data = item["data"]["image"]["data"]
-            logging.info(f"Starting Page {page_number} ({url})")
-            image_bytes = base64.b64decode(image_data)
-            formulas_output =[]
-            offsets=[]
-            total_page_characters = 0
-            logging.info(f"Page {page_number} ({url}) start analyzing.")
-            # result = analyze_document_with_retries(document_analysis_client, url_with_sas)
-            poller = document_analysis_client.begin_analyze_document(
-                "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
-            )
-            result = poller.result()
-            logging.info(f"Page {page_number} ({url}) successfully analyzed.")
-            if len(result.pages[0].words)>0:
-                content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
-                formulas = get_relevant_formula(url, result, 50)
-                combined_formulas = []
-                polygons = []
-                for i, formula in enumerate(formulas):
-                    current_poly = formula["polygon"]
-                    polygons.append(current_poly)
-                    # Check if we should combine polygons or if we are at the last formula
-                    is_last_formula = i == len(formulas) - 1
-                    is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
+# @bp.route("/skillset/formula", methods=["POST"])
+# async def get_formula():
+#     try:
+#         request_json = await request.get_json()
+#         if not request_json or "values" not in request_json:
+#             raise ValueError("Invalid request payload")
+#         values = request_json.get("values", None)
+#         response_array = []
+#         document_analysis_client = DocumentAnalysisClient(
+#             endpoint=DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(DOCUMENT_INTELLIGENCE_KEY)
+#         )
+#         errors = None
+#         warnings = None
+#         document_blob_container, blob_name = split_url(values[0]["data"]["image"]["url"])
+#         logging.info(f"{len(values)} pages received for Document {document_blob_container}")
+#         for page_number, item in enumerate(values): # going through the pages
+#             url = item["data"]["image"]["url"]
+#             image_data = item["data"]["image"]["data"]
+#             logging.info(f"Starting Page {page_number} ({url})")
+#             image_bytes = base64.b64decode(image_data)
+#             formulas_output =[]
+#             offsets=[]
+#             total_page_characters = 0
+#             logging.info(f"Page {page_number} ({url}) start analyzing.")
+#             # result = analyze_document_with_retries(document_analysis_client, url_with_sas)
+#             poller = document_analysis_client.begin_analyze_document(
+#                 "prebuilt-read", document=image_bytes, features=[AnalysisFeature.FORMULAS]
+#             )
+#             result = poller.result()
+#             logging.info(f"Page {page_number} ({url}) successfully analyzed.")
+#             if len(result.pages[0].words)>0:
+#                 content = [{"polygon": obj.polygon, "content": obj.content, "type": "text"} for obj in result.pages[0].words]
+#                 formulas = get_relevant_formula(url, result, 50)
+#                 combined_formulas = []
+#                 polygons = []
+#                 for i, formula in enumerate(formulas):
+#                     current_poly = formula["polygon"]
+#                     polygons.append(current_poly)
+#                     # Check if we should combine polygons or if we are at the last formula
+#                     is_last_formula = i == len(formulas) - 1
+#                     is_far_enough = is_last_formula or get_vertical_distance(current_poly, formulas[i + 1]["polygon"]) >= 20
 
-                    if is_far_enough:
-                        combined_polygon = get_combined_polygon(polygons)
-                        formula["polygon"] = combined_polygon
-                        combined_formulas.append(formula)
-                        logging.info(f"Saving screenshot from Page {index} ({url})")
-                        screenshot_formula(image_bytes, formula["content"], combined_polygon)
-                        logging.info(f"Successfully saved screenshot from Page {index} ({url})")
-                        polygons = []  # Reset polygons for the next group
-                # Insert formulas into the reading order
-                logging.info("Inserting formulas into reading order")
-                for formula in combined_formulas:
-                    content = insert_in_reading_order(content, formula)
-                logging.info("Successfully inserted formulas into reading order")
+#                     if is_far_enough:
+#                         combined_polygon = get_combined_polygon(polygons)
+#                         formula["polygon"] = combined_polygon
+#                         combined_formulas.append(formula)
+#                         logging.info(f"Saving screenshot from Page {index} ({url})")
+#                         screenshot_formula(image_bytes, formula["content"], combined_polygon)
+#                         logging.info(f"Successfully saved screenshot from Page {index} ({url})")
+#                         polygons = []  # Reset polygons for the next group
+#                 # Insert formulas into the reading order
+#                 logging.info("Inserting formulas into reading order")
+#                 for formula in combined_formulas:
+#                     content = insert_in_reading_order(content, formula)
+#                 logging.info("Successfully inserted formulas into reading order")
 
-                # Update offsets and output
-                for obj in content:
-                    if obj["type"]=="formula":
-                        logging.info("Appending character offsets and url")
-                        offsets.append(total_page_characters)
-                        formulas_output.append(f'![]({BLOB_ACCOUNT}/{FORMULA_IMAGE_CONTAINER}/{obj["content"]})')
-                        logging.info("Successfully appended character offsets and url")
-                    else:
-                        total_page_characters += (len(obj["content"])+1)
+#                 # Update offsets and output
+#                 for obj in content:
+#                     if obj["type"]=="formula":
+#                         logging.info("Appending character offsets and url")
+#                         offsets.append(total_page_characters)
+#                         formulas_output.append(f'![]({BLOB_ACCOUNT}/{FORMULA_IMAGE_CONTAINER}/{obj["content"]})')
+#                         logging.info("Successfully appended character offsets and url")
+#                     else:
+#                         total_page_characters += (len(obj["content"])+1)
         
-            output={
-                "recordId": item['recordId'],
-                "data": {
-                    "formula": formulas_output,
-                    "offset": offsets
-                },
-                "errors": errors,
-                "warnings": warnings
-            }
-            response_array.append(output)
-            logging.info(f"Completed Page {page_number} ({url})")
-        response = jsonify({"values":response_array})
-        logging.info("Completed request for Document {document_blob_container}")
-        return response, 200  # Status code should be 200 for success
-    except HttpResponseError as hre:
-        logging.exception("HttpResponseError in /skillset/formula")
-        return jsonify({"HttpResponseError error": str(hre)}), 500
-    except FormulaProcessingError as fpe:
-        logging.exception("Formula processing error in /skillset/formula")
-        return jsonify({"Formula error": str(fpe)}), 500
-    except ValueError as ve:
-        logging.exception("Value error in /skillset/formula")
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        logging.exception("Unexpected exception in /skillset/formula")
-        return jsonify({"Unexpected error": str(e)}), 500
+#             output={
+#                 "recordId": item['recordId'],
+#                 "data": {
+#                     "formula": formulas_output,
+#                     "offset": offsets
+#                 },
+#                 "errors": errors,
+#                 "warnings": warnings
+#             }
+#             response_array.append(output)
+#             logging.info(f"Completed Page {page_number} ({url})")
+#         response = jsonify({"values":response_array})
+#         logging.info("Completed request for Document {document_blob_container}")
+#         return response, 200  # Status code should be 200 for success
+#     except HttpResponseError as hre:
+#         logging.exception("HttpResponseError in /skillset/formula")
+#         return jsonify({"HttpResponseError error": str(hre)}), 500
+#     except FormulaProcessingError as fpe:
+#         logging.exception("Formula processing error in /skillset/formula")
+#         return jsonify({"Formula error": str(fpe)}), 500
+#     except ValueError as ve:
+#         logging.exception("Value error in /skillset/formula")
+#         return jsonify({"error": str(ve)}), 400
+#     except Exception as e:
+#         logging.exception("Unexpected exception in /skillset/formula")
+#         return jsonify({"Unexpected error": str(e)}), 500
  
 def get_images_from_file(blob_service_client, url):
     word_container, blob = split_url(url)
