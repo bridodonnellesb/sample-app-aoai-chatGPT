@@ -1673,9 +1673,12 @@ def get_combined_polygon(polygons):
 def generate_filename(url, id):    
     pattern = fr'{BLOB_ACCOUNT}/([\w-]+)/([\w-]+)/binary/([\w-]+)\.jpg'
     match = re.search(pattern, url)
-    file_source = match.group(2) if match.group(2) else str(uuid.uuid4())
-    page_source = match.group(3) if match.group(2) else str(uuid.uuid4())
-    return f"formula_{file_source}_{page_source}_{id}.jpg"
+    identifier = str(uuid.uuid4())
+    if match:
+        file_source = match.group(2)
+        page_source = match.group(3)
+        identifier = f"{file_source}_{page_source}_{id}"
+    return f"formula_{identifier}.jpg"
 
 def get_relevant_formula(url, result, width):
     if not result.pages[0].formulas:
