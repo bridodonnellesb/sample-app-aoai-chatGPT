@@ -35,10 +35,10 @@ LOCAL_TEMP_DIR = os.environ.get("LOCAL_TEMP_DIR")
  
 def download_file(blob_service_client, url):
     blob_container, blob_name = split_url(url)
-    local_filename = f'{LOCAL_TEMP_DIR}{blob_name}'
+    local_filepath = f'{LOCAL_TEMP_DIR}{blob_name}'
     blob_client = blob_service_client.get_blob_client(container=blob_container, blob=blob_name)
     try:
-        with open(local_filename, "wb") as downloaded_file:
+        with open(local_filepath, "wb") as downloaded_file:
             download_stream = blob_client.download_blob()
             downloaded_file.write(download_stream.readall())
         print("Downloaded Word Document")
@@ -47,7 +47,7 @@ def download_file(blob_service_client, url):
     except Exception as e:
         print(f"An error occurred: {e}")
  
-    return local_filename
+    return blob_name
  
 # def upload_pdf_to_blob_storage(blob_service_client, output_dir, blob_name):
 #     blob_client = blob_service_client.get_blob_client(container=PDF_CONTAINER, blob=blob_name)
