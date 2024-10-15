@@ -18,8 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && apt-get install -y --no-install-recommends \
     libpq5 \
-    # Add LibreOffice dependencies
-    && apt-get install -y --no-install-recommends libreoffice poppler-utils \
+    && apt-get install -y --no-install-recommends poppler-utils \
     # Clean up unnecessary files and cache to reduce image size
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
